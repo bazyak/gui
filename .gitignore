@@ -1,4 +1,4 @@
-build/*
+gui*/build/*
 .DS_Store
 *.vscode/*
 main
