@@ -61,20 +61,16 @@ void MainWindow::on_ex2_calc_button_clicked()
         QMessageBox::critical(this, "Ошибка", "Сторона треугольника должна быть больше 0");
         return;
     }
-
     if (!(angle > 0 && angle < 180))
     {
         QMessageBox::critical(this, "Ошибка", "Угол должен быть в диапазоне (0; 180)");
         return;
     }
-
     if (ui->ex2_select_deg->isChecked())
     {
         angle = qDegreesToRadians(angle);
     }
-
     double const _cos = angle > 90 ? -qCos(angle) : qCos(angle);
-
     auto const c = qSqrt(a*a + b*b - 2*a*b*_cos);
 
     ui->ex2_label_result->setText(QString::number(c));
