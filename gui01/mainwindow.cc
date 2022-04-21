@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 
 #include <QMessageBox>
+#include <QtGlobal>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -26,10 +27,11 @@ void MainWindow::on_ex1_calc_button_clicked()
     auto const c = ui->ex1_edit_c->text().toDouble() - d;
 
     QString res = "";
-    if (!a)
+    if (qFuzzyIsNull(a))
     {
-        res = !b ? "неизвестных нет"
-                 : "x = " + QString::number(-c / b);
+        res = qFuzzyIsNull(b)
+                ? "неизвестных нет"
+                : "x = " + QString::number(-c / b);
     }
     else
     {
@@ -40,9 +42,10 @@ void MainWindow::on_ex1_calc_button_clicked()
         {
             auto const den = 2*a;
 
-            res = !dis ? "x = "+ QString::number(-b / den)
-                       : "x1 = " + QString::number((-b - qSqrt(dis)) / den) + ",  " +
-                         "x2 = " + QString::number((-b + qSqrt(dis)) / den);
+            res = qFuzzyIsNull(dis)
+                    ? "x = "+ QString::number(-b / den)
+                    : "x1 = " + QString::number((-b - qSqrt(dis)) / den) + ",  " +
+                      "x2 = " + QString::number((-b + qSqrt(dis)) / den);
         }
     }
     ui->ex1_label_result->setText(res);
@@ -56,7 +59,8 @@ void MainWindow::on_ex2_calc_button_clicked()
     auto b = ui->ex2_edit_b->text().toDouble();
     auto angle = ui->ex2_edit_angle->text().toDouble();
 
-    if (a <= 0 || b <= 0)
+
+    if (qFuzzyCompare(a, 0) || a < 0 || qFuzzyCompare(b, 0) || b < 0)
     {
         QMessageBox::critical(this, "Ошибка", "Сторона треугольника должна быть больше 0");
         return;
