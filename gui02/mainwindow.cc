@@ -59,10 +59,10 @@ MainWindow::~MainWindow()
 void MainWindow::on_plainTextEdit_textChanged()
 {
     auto text = ui_->plainTextEdit->toPlainText();
-    auto to_replace = parse_text_->ToReplace(text);
+    auto const to_replace = parse_text_->ToReplace(text);
     if (!to_replace.empty())
     {
-        auto cursor = ui_->plainTextEdit->textCursor();
+        auto const cursor = ui_->plainTextEdit->textCursor();
         parse_text_->Parse(text, to_replace);
         ui_->plainTextEdit->setPlainText(text);
         ui_->plainTextEdit->setTextCursor(cursor);
@@ -73,7 +73,7 @@ void MainWindow::on_plainTextEdit_textChanged()
 // ex 2
 void MainWindow::on_ex2_print_button_clicked()
 {
-    QString str = "";
+    QString str { };
     for (int row = 0; row < model_.Count(); ++row)
     {
         str += model_.GetValueByIndex(row) + "\n";
@@ -92,10 +92,10 @@ void MainWindow::on_ex2_add_button_clicked()
 
 void MainWindow::on_ex2_remove_button_clicked()
 {
-    auto selection = ui_->listView->selectionModel()->selection();
+    auto const selection = ui_->listView->selectionModel()->selection();
     if (!selection.empty())
     {
-        auto idx = selection.indexes()[0].row();
+        auto const idx = selection.indexes()[0].row();
         model_.RemoveItemByIndex(idx);
     }
 }
@@ -117,7 +117,7 @@ void MainWindow::on_ex2_view_mode_stateChanged(int arg1)
 void MainWindow::on_ex3_color_button_clicked()
 {
     std::unordered_set<int> rows;
-    auto sel = ui_->tableWidget->selectedItems();
+    auto const sel = ui_->tableWidget->selectedItems();
     std::for_each(sel.begin(), sel.end(), [&rows](auto const& el) { rows.insert(el->row()); });
 
     for (auto const& row : rows)
