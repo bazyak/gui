@@ -33,6 +33,7 @@ MainWindow::MainWindow(QWidget* parent)
 {
     ui_->setupUi(this);
     Q_INIT_RESOURCE(res);
+    setFixedSize(width(), height());
 
     dir_ = settings_->contains("dir")
             ? settings_->value("dir", "").toString()
@@ -94,14 +95,13 @@ void MainWindow::on_save_clicked()
     auto const file_path = QFileDialog::getSaveFileName(this,
         tr("Выберите файл для сохранения"),
         dir_, tr("Текстовый файл (*.txt);;Любой файл (*.*)"));
-    if (is_read_only_ && file_path == file_path_)
-    {
-        QMessageBox::warning(this, tr("Ошибка"), tr("Этот файл открыт только для чтения"));
-        return;
-    }
-
     if (file_path.length() > 0)
     {
+        if (is_read_only_ && file_path == file_path_)
+        {
+            QMessageBox::warning(this, tr("Ошибка"), tr("Этот файл открыт только для чтения"));
+            return;
+        }
         QFile file(file_path);
         if (file.open(QFile::WriteOnly))
         {
@@ -189,5 +189,11 @@ void MainWindow::switch_language(QString language)
     ui_->open_read_button->setText(tr("Открыть на чтение"));
     ui_->save_button->setText(tr("Сохранить"));
     ui_->help_button->setText(tr("Справка"));
+    ui_->label_settings->setText(tr("Настройки горячих клавиш"));
+    ui_->label_open->setText(tr("Открыть"));
+    ui_->label_save->setText(tr("Сохранить"));
+    ui_->label_new->setText(tr("Новый"));
+    ui_->label_quit->setText(tr("Выход"));
+
     update_based_on_read_only_state();
 }
