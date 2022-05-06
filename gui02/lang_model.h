@@ -12,13 +12,14 @@ class LangModel
 public:
     LangModel(QObject* parent = nullptr);
 
-    QAbstractItemModel* GetModel() const;
-    QModelIndex GetLastIndex() const;
-    int Count() const;
-    QString GetValueByIndex(int row) const;
+    QAbstractItemModel* getModel() const;
+    QModelIndex getLastIndex() const;
+    int count() const;
+    QString getValueByIndex(int row) const;
 
-    void AddItem();
-    bool RemoveItemByIndex(int row);
+    void addItem();
+    void addItem(QIcon const& icon, QString const& text);
+    bool removeItemByIndex(int row);
 
 private:
     std::unique_ptr<QStandardItemModel> model_;

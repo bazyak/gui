@@ -9,7 +9,6 @@
 #include <unordered_set>
 #include <algorithm>
 
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui_(new Ui::MainWindow)
@@ -21,7 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
     if (!parse_text_) close();
 
     // ex 2
-    ui_->listView->setModel(model_.GetModel());
+    ui_->listView->setModel(model_.getModel());
 
     ui_->listView->setDragDropOverwriteMode(false);
     ui_->listView->setDragEnabled(true);
@@ -48,47 +47,42 @@ MainWindow::MainWindow(QWidget *parent)
     }
 }
 
-
 MainWindow::~MainWindow()
 {
     delete ui_;
 }
 
-
 // ex 1
 void MainWindow::on_plainTextEdit_textChanged()
 {
     auto text = ui_->plainTextEdit->toPlainText();
-    auto const to_replace = parse_text_->ToReplace(text);
+    auto const to_replace = parse_text_->toReplace(text);
     if (!to_replace.empty())
     {
         auto const cursor = ui_->plainTextEdit->textCursor();
-        parse_text_->Parse(text, to_replace);
+        parse_text_->parse(text, to_replace);
         ui_->plainTextEdit->setPlainText(text);
         ui_->plainTextEdit->setTextCursor(cursor);
     }
 }
 
-
 // ex 2
 void MainWindow::on_ex2_print_button_clicked()
 {
     QString str { };
-    for (int row = 0; row < model_.Count(); ++row)
+    for (int row = 0; row < model_.count(); ++row)
     {
-        str += model_.GetValueByIndex(row) + "\n";
+        str += model_.getValueByIndex(row) + "\n";
     }
     QMessageBox::information(this, "Info", str);
 }
 
-
 void MainWindow::on_ex2_add_button_clicked()
 {
-    model_.AddItem();
-    ui_->listView->setCurrentIndex(model_.GetLastIndex());
-    ui_->listView->edit(model_.GetLastIndex());
+    model_.addItem();
+    ui_->listView->setCurrentIndex(model_.getLastIndex());
+    ui_->listView->edit(model_.getLastIndex());
 }
-
 
 void MainWindow::on_ex2_remove_button_clicked()
 {
@@ -96,10 +90,9 @@ void MainWindow::on_ex2_remove_button_clicked()
     if (!selection.empty())
     {
         auto const idx = selection.indexes()[0].row();
-        model_.RemoveItemByIndex(idx);
+        model_.removeItemByIndex(idx);
     }
 }
-
 
 void MainWindow::on_ex2_view_mode_stateChanged(int arg1)
 {
@@ -111,7 +104,6 @@ void MainWindow::on_ex2_view_mode_stateChanged(int arg1)
     }
     ui_->listView->setViewMode(QListView::ListMode);
 }
-
 
 // ex 3
 void MainWindow::on_ex3_color_button_clicked()
@@ -128,7 +120,6 @@ void MainWindow::on_ex3_color_button_clicked()
         }
     }
 }
-
 
 void MainWindow::on_ex3_clear_color_button_clicked()
 {

@@ -10,80 +10,51 @@
 #include <QString>
 #include <memory>
 
-
 // Exercise 2
 LangModel::LangModel(QObject* parent)
     : model_(std::make_unique<QStandardItemModel>(parent))
 {
-    QList<QStandardItem*> lang_list;
-
-    lang_list.emplace_back(new QStandardItem(
-                                QIcon(QApplication::style()->standardIcon(
-                                          QStyle::SP_MediaPlay)),
-                                "С++"));
-    lang_list.emplace_back(new QStandardItem(
-                                QIcon(QApplication::style()->standardIcon(
-                                          QStyle::SP_ComputerIcon)),
-                                "Python"));
-    lang_list.emplace_back(new QStandardItem(
-                                QIcon(QApplication::style()->standardIcon(
-                                          QStyle::SP_DirIcon)),
-                                "Java"));
-    lang_list.emplace_back(new QStandardItem(
-                                QIcon(QApplication::style()->standardIcon(
-                                          QStyle::SP_DriveCDIcon)),
-                                "C#"));
-    lang_list.emplace_back(new QStandardItem(
-                                QIcon(QApplication::style()->standardIcon(
-                                          QStyle::SP_FileLinkIcon)),
-                                "PHP"));
-    lang_list.emplace_back(new QStandardItem(
-                                QIcon(QApplication::style()->standardIcon(
-                                          QStyle::SP_ArrowUp)),
-                                "JavaScript"));
-    for (auto&& el : lang_list)
-    {
-        el->setFlags(el->flags() & ~(Qt::ItemIsDropEnabled));
-        model_->appendRow(el);
-    }
+    addItem(QIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPlay)), "С++");
+    addItem(QIcon(QApplication::style()->standardIcon(QStyle::SP_ComputerIcon)), "Python");
+    addItem(QIcon(QApplication::style()->standardIcon(QStyle::SP_DirIcon)), "Java");
+    addItem(QIcon(QApplication::style()->standardIcon(QStyle::SP_DriveCDIcon)), "С#");
+    addItem(QIcon(QApplication::style()->standardIcon(QStyle::SP_FileLinkIcon)), "PHP");
+    addItem(QIcon(QApplication::style()->standardIcon(QStyle::SP_ArrowUp)), "JavaScript");
 }
 
-
-QAbstractItemModel* LangModel::GetModel() const
+QAbstractItemModel* LangModel::getModel() const
 {
     return model_.get();
 }
 
-
-void LangModel::AddItem()
+void LangModel::addItem()
 {
-    auto item = new QStandardItem(QIcon(QApplication::style()->standardIcon(
-                                            QStyle::SP_TrashIcon)),
-                                  "Новый язык");
+    addItem(QIcon(QApplication::style()->standardIcon(QStyle::SP_TrashIcon)), "Новый язык");
+}
+
+void LangModel::addItem(QIcon const& icon, QString const& text)
+{
+    auto item = new QStandardItem(icon, text);
     item->setFlags(item->flags() & ~(Qt::ItemIsDropEnabled));
     model_->appendRow(item);
 }
 
-
-QModelIndex LangModel::GetLastIndex() const
+QModelIndex LangModel::getLastIndex() const
 {
     return model_->index(model_->rowCount()-1, 0);
 }
 
-
-int LangModel::Count() const
+int LangModel::count() const
 {
     return model_->rowCount();
 }
 
-
-QString LangModel::GetValueByIndex(int row) const
+QString LangModel::getValueByIndex(int row) const
 {
     return model_->data(model_->index(row, 0)).toString();
 }
 
-
-bool LangModel::RemoveItemByIndex(int row)
+bool LangModel::removeItemByIndex(int row)
 {
     return model_->removeRow(row);
 }
