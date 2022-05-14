@@ -44,6 +44,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui_->save_button, &QPushButton::clicked, this, &MainWindow::on_save_clicked);
     connect(ui_->help_button, &QPushButton::clicked, this, &MainWindow::on_help_clicked);
     connect(ui_->english_radio_button, &QRadioButton::toggled, this, &MainWindow::on_english_selected);
+    connect(ui_->dark_radio_button, &QRadioButton::toggled, this, &MainWindow::on_dark_selected);
 
     hot_keys_[ui_->open_edit->objectName()] = std::make_shared<QShortcut>(QKeySequence("Ctrl+O"), this);
     hot_keys_[ui_->save_edit->objectName()] = std::make_shared<QShortcut>(QKeySequence("Ctrl+S"), this);
@@ -149,7 +150,7 @@ void MainWindow::on_english_selected(bool checked)
 
 void MainWindow::on_dark_selected(bool checked)
 {
-
+    switch_theme(checked ? "dark" : "light");
 }
 
 void MainWindow::load_file()
@@ -184,7 +185,7 @@ void MainWindow::update_based_on_read_only_state()
     ui_->plainTextEdit->setReadOnly(is_read_only_);
 }
 
-void MainWindow::switch_language(QString language)
+void MainWindow::switch_language(QString const& language)
 {
     if (translator_.load(":/gui_" + language))
     {
@@ -209,4 +210,9 @@ void MainWindow::switch_language(QString language)
     ui_->label_quit->setText(tr("Выход"));
 
     update_based_on_read_only_state();
+}
+
+void MainWindow::switch_theme(QString const& theme)
+{
+
 }

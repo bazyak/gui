@@ -32,11 +32,13 @@ private slots:
     void on_help_clicked();
     void on_quit_clicked();
     void on_english_selected(bool checked);
+    void on_dark_selected(bool checked);
 
 private:
     void load_file();
     void update_based_on_read_only_state();
-    void switch_language(QString language);
+    void switch_language(QString const& language);
+    void switch_theme(QString const& theme);
 
     QTranslator translator_ { };
     QString file_path_ { };
