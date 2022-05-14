@@ -179,7 +179,7 @@ void MainWindow::update_based_on_read_only_state()
     ui_->plainTextEdit->setReadOnly(is_read_only_);
 }
 
-void MainWindow::switch_language(QString language)
+void MainWindow::switch_language(QString const& language)
 {
     if (translator_.load(":/gui04_" + language))
     {

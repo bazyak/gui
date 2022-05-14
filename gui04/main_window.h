@@ -36,7 +36,7 @@ private slots:
 private:
     void load_file();
     void update_based_on_read_only_state();
-    void switch_language(QString language);
+    void switch_language(QString const& language);
 
     QTranslator translator_ { };
     QString file_path_ { };
