@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <cctype>
 
-
 // Exercise 3.2
 std::unordered_map<std::string, std::string> HtmlParser::Parse(QString const& text) const
 {
@@ -32,7 +31,6 @@ std::unordered_map<std::string, std::string> HtmlParser::Parse(QString const& te
     return info;
 }
 
-
 HtmlParser::rgx_t& HtmlParser::block()
 {
     static rgx_t r
@@ -42,7 +40,6 @@ HtmlParser::rgx_t& HtmlParser::block()
     };
     return r;
 }
-
 
 HtmlParser::map_rgx_t& HtmlParser::templates()
 {
@@ -60,7 +57,6 @@ HtmlParser::map_rgx_t& HtmlParser::templates()
     };
     return m;
 }
-
 
 std::string& HtmlParser::rtrim(std::string& str)
 {

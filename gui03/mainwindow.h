@@ -1,5 +1,4 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 #include <QMainWindow>
 #include <memory>
@@ -29,4 +28,3 @@ private:
     Ui::MainWindow *ui_;
     std::unique_ptr<HtmlParser> parser_;
 };
-#endif // MAINWINDOW_H

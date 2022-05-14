@@ -11,7 +11,6 @@
 
 #include "html_parser.h"
 
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui_(new Ui::MainWindow)
@@ -25,7 +24,6 @@ MainWindow::~MainWindow()
 {
     delete ui_;
 }
-
 
 void MainWindow::on_ex1_open_button_clicked()
 {
@@ -43,7 +41,6 @@ void MainWindow::on_ex1_open_button_clicked()
     }
 }
 
-
 void MainWindow::on_ex1_save_button_clicked()
 {
     auto const file_name = QFileDialog::getSaveFileName(this, "Выберите файл для сохранения",
@@ -60,7 +57,6 @@ void MainWindow::on_ex1_save_button_clicked()
     }
 }
 
-
 void MainWindow::on_ex1_help_button_clicked()
 {
     QFile file(":/help.txt");
@@ -71,7 +67,6 @@ void MainWindow::on_ex1_help_button_clicked()
         QMessageBox::information(this, "Help", text);
     }
 }
-
 
 void MainWindow::on_ex2_open_button_clicked()
 {

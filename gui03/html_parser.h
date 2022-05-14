@@ -6,7 +6,6 @@
 #include <regex>
 #include <string>
 
-
 // Exercise 3.2
 class HtmlParser
 {
