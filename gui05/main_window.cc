@@ -22,8 +22,11 @@
 #include <QEvent>
 #include <QKeySequence>
 #include <memory>
+#include <QStyle>
+#include <QList>
 
 #include "key_event_filter.h"
+#include "global_consts.h"
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -150,7 +153,7 @@ void MainWindow::on_english_selected(bool checked)
 
 void MainWindow::on_dark_selected(bool checked)
 {
-    switch_theme(checked ? "dark" : "light");
+    switch_theme(checked ? theme_values::DARK : theme_values::LIGHT);
 }
 
 void MainWindow::load_file()
@@ -214,5 +217,12 @@ void MainWindow::switch_language(QString const& language)
 
 void MainWindow::switch_theme(QString const& theme)
 {
-
+    auto lst = ui_->centralwidget->findChildren<QWidget*>();
+    lst.push_back(ui_->centralwidget);
+    for (auto&& child : lst)
+    {
+        child->setProperty(qss_property_name::THEME, theme);
+        child->style()->unpolish(child);
+        child->style()->polish(child);
+    }
 }

@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>539</width>
-    <height>513</height>
+    <height>486</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -44,7 +44,7 @@
      <rect>
       <x>7</x>
       <y>250</y>
-      <width>501</width>
+      <width>521</width>
       <height>20</height>
      </rect>
     </property>
@@ -167,7 +167,7 @@
        <x>260</x>
        <y>30</y>
        <width>211</width>
-       <height>21</height>
+       <height>23</height>
       </rect>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_7">
@@ -218,7 +218,7 @@
        <x>10</x>
        <y>30</y>
        <width>211</width>
-       <height>21</height>
+       <height>23</height>
       </rect>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_5">
@@ -305,7 +305,7 @@
        <x>10</x>
        <y>60</y>
        <width>212</width>
-       <height>21</height>
+       <height>23</height>
       </rect>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -356,7 +356,7 @@
        <x>260</x>
        <y>60</y>
        <width>211</width>
-       <height>21</height>
+       <height>23</height>
       </rect>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_8">
@@ -503,7 +503,6 @@
     </rect>
    </property>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources/>
  <connections/>

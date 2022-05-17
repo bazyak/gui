@@ -18,6 +18,7 @@ SOURCES += \
     main_window.cc
 
 HEADERS += \
+    global_consts.h \
     key_event_filter.h \
     main_window.h
 
@@ -34,3 +35,5 @@ RESOURCES += \
 
 TRANSLATIONS += gui_en.ts
 CODECFORSRC = UTF-8
+
+DISTFILES +=
