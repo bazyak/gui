@@ -9,9 +9,9 @@
 #include <QKeyCombination>
 #include <QShortcut>
 
-KeyEventFilter::KeyEventFilter(hk_map_t& map, QObject* parent)
+KeyEventFilter::KeyEventFilter(hk_map_t& m, QObject* parent)
     : QObject(parent)
-    , map_(map)
+    , map_(m)
 {
 }
 

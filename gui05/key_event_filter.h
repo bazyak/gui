@@ -13,7 +13,7 @@ class KeyEventFilter : public QObject
 public:
     using hk_map_t = std::unordered_map<QString, std::shared_ptr<QShortcut>>;
 
-    explicit KeyEventFilter(hk_map_t& map, QObject* parent = nullptr);
+    explicit KeyEventFilter(hk_map_t& m, QObject* parent = nullptr);
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;

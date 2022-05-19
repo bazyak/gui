@@ -502,7 +502,22 @@
      <height>24</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuTask_5_3">
+    <property name="locale">
+     <locale language="Russian" country="Russia"/>
+    </property>
+    <property name="title">
+     <string>Задание 5.3</string>
+    </property>
+    <addaction name="actionFinder"/>
+   </widget>
+   <addaction name="menuTask_5_3"/>
   </widget>
+  <action name="actionFinder">
+   <property name="text">
+    <string>Просмотрщик</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

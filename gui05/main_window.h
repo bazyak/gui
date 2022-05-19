@@ -3,6 +3,7 @@
 #include <QMainWindow>
 #include <QTranslator>
 #include <QString>
+#include <QList>
 #include <memory>
 #include <QKeyEvent>
 
@@ -15,6 +16,8 @@ QT_END_NAMESPACE
 class QSettings;
 class QEvent;
 class KeyEventFilter;
+class FinderDialog;
+class QWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -25,30 +28,31 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_open_clicked();
-    void on_open_read_clicked();
-    void on_save_clicked();
-    void on_new_clicked();
-    void on_help_clicked();
-    void on_quit_clicked();
-    void on_english_selected(bool checked);
-    void on_dark_selected(bool checked);
+    void onOpenClicked();
+    void onOpenReadClicked();
+    void onSaveClicked();
+    void onNewClicked();
+    void onHelpClicked();
+    void onQuitClicked();
+    void onEnglishSelected(bool checked);
+    void onDarkSelected(bool checked);
+    void onFinderMenuClicked();
 
 private:
-    void load_file();
-    void update_based_on_read_only_state();
-    void switch_language(QString const& language);
-    void switch_theme(QString const& theme);
+    void loadFile();
+    void updateBasedOnReadOnlyState();
+    void switchLanguage(QString const& language);
+    void switchTheme(QString const& theme);
 
     QTranslator translator_ { };
     QString file_path_ { };
     QString dir_ { };
     KeyEventFilter::hk_map_t hot_keys_ { };
 
-    bool is_read_only_;
+    bool is_read_only_ { false };
 
-    std::unique_ptr<Ui::MainWindow> ui_ { nullptr };
-    std::unique_ptr<QSettings> settings_ { nullptr };
-    std::shared_ptr<KeyEventFilter> ev_filter_ { nullptr };
-
+    std::unique_ptr<Ui::MainWindow> ui_;
+    std::unique_ptr<QSettings> settings_;
+    std::shared_ptr<KeyEventFilter> ev_filter_;
+    std::unique_ptr<FinderDialog> finder_dialog_;
 };

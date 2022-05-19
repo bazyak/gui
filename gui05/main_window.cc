@@ -1,6 +1,7 @@
 #include "main_window.h"
 #include "ui_main_window.h"
 
+#include <memory>
 #include <QDebug>
 #include <QApplication>
 #include <QMainWindow>
@@ -15,24 +16,21 @@
 #include <QTranslator>
 #include <QRadioButton>
 #include <QSettings>
-#include <QKeySequence>
-#include <QMetaEnum>
 #include <QShortcut>
-#include <QKeyCombination>
-#include <QEvent>
 #include <QKeySequence>
-#include <memory>
 #include <QStyle>
-#include <QList>
+#include <QAction>
 
 #include "key_event_filter.h"
 #include "global_consts.h"
+#include "finder_dialog.h"
+#include "little_helpers.h"
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
-    , is_read_only_(false)
     , ui_(std::make_unique<Ui::MainWindow>())
     , settings_(std::make_unique<QSettings>("settings.conf", QSettings::IniFormat))
+    , finder_dialog_(std::make_unique<FinderDialog>(this))
 {
     ui_->setupUi(this);
     Q_INIT_RESOURCE(res);
@@ -42,12 +40,12 @@ MainWindow::MainWindow(QWidget* parent)
             ? settings_->value("dir", "").toString()
             : QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
 
-    connect(ui_->open_button, &QPushButton::clicked, this, &MainWindow::on_open_clicked);
-    connect(ui_->open_read_button, &QPushButton::clicked, this, &MainWindow::on_open_read_clicked);
-    connect(ui_->save_button, &QPushButton::clicked, this, &MainWindow::on_save_clicked);
-    connect(ui_->help_button, &QPushButton::clicked, this, &MainWindow::on_help_clicked);
-    connect(ui_->english_radio_button, &QRadioButton::toggled, this, &MainWindow::on_english_selected);
-    connect(ui_->dark_radio_button, &QRadioButton::toggled, this, &MainWindow::on_dark_selected);
+    connect(ui_->open_button, &QPushButton::clicked, this, &MainWindow::onOpenClicked);
+    connect(ui_->open_read_button, &QPushButton::clicked, this, &MainWindow::onOpenReadClicked);
+    connect(ui_->save_button, &QPushButton::clicked, this, &MainWindow::onSaveClicked);
+    connect(ui_->help_button, &QPushButton::clicked, this, &MainWindow::onHelpClicked);
+    connect(ui_->english_radio_button, &QRadioButton::toggled, this, &MainWindow::onEnglishSelected);
+    connect(ui_->dark_radio_button, &QRadioButton::toggled, this, &MainWindow::onDarkSelected);
 
     hot_keys_[ui_->open_edit->objectName()] = std::make_shared<QShortcut>(QKeySequence("Ctrl+O"), this);
     hot_keys_[ui_->save_edit->objectName()] = std::make_shared<QShortcut>(QKeySequence("Ctrl+S"), this);
@@ -63,10 +61,12 @@ MainWindow::MainWindow(QWidget* parent)
     hot_key = hot_keys_[ui_->quit_edit->objectName()]->key();
     ui_->quit_edit->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
 
-    connect(hot_keys_[ui_->open_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::on_open_clicked);
-    connect(hot_keys_[ui_->save_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::on_save_clicked);
-    connect(hot_keys_[ui_->new_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::on_new_clicked);
-    connect(hot_keys_[ui_->quit_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::on_quit_clicked);
+    connect(hot_keys_[ui_->open_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onOpenClicked);
+    connect(hot_keys_[ui_->save_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onSaveClicked);
+    connect(hot_keys_[ui_->new_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onNewClicked);
+    connect(hot_keys_[ui_->quit_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onQuitClicked);
+
+    connect(ui_->actionFinder, &QAction::triggered, this, &MainWindow::onFinderMenuClicked);
 
     ev_filter_ = std::make_shared<KeyEventFilter>(hot_keys_);
     ui_->open_edit->installEventFilter(ev_filter_.get());
@@ -79,56 +79,55 @@ MainWindow::~MainWindow()
 {
 }
 
-
-void MainWindow::on_open_clicked()
+void MainWindow::onOpenClicked()
 {
     is_read_only_ = false;
-    load_file();
-    update_based_on_read_only_state();
+    loadFile();
+    updateBasedOnReadOnlyState();
 }
 
-void MainWindow::on_open_read_clicked()
+void MainWindow::onOpenReadClicked()
 {
     is_read_only_ = true;
-    load_file();
-    update_based_on_read_only_state();
+    loadFile();
+    updateBasedOnReadOnlyState();
 }
 
-void MainWindow::on_save_clicked()
+void MainWindow::onSaveClicked()
 {
-    auto const file_path = QFileDialog::getSaveFileName(this,
+    auto const f_path = QFileDialog::getSaveFileName(this,
         tr("Выберите файл для сохранения"),
         dir_, tr("Текстовый файл (*.txt);;Любой файл (*.*)"));
-    if (file_path.length() > 0)
+    if (f_path.length() > 0)
     {
-        if (is_read_only_ && file_path == file_path_)
+        if (is_read_only_ && file_path_ == f_path)
         {
-            QMessageBox::warning(this, tr("Ошибка"), tr("Этот файл открыт только для чтения"));
+            QMessageBox::warning(nullptr, tr("Ошибка"), tr("Этот файл открыт только для чтения"));
             return;
         }
-        QFile file(file_path);
+        QFile file(f_path);
         if (file.open(QFile::WriteOnly))
         {
             QTextStream stream(&file);
             stream << ui_->plainTextEdit->toPlainText();
-            file_path_ = file_path;
-            dir_ = QFileInfo(file_path_).absolutePath();
+            file_path_ = f_path;
+            dir_ = QFileInfo(f_path).absolutePath();
             settings_->setValue("dir", dir_);
             is_read_only_ = false;
         }
     }
-    update_based_on_read_only_state();
+    updateBasedOnReadOnlyState();
 }
 
-void MainWindow::on_new_clicked()
+void MainWindow::onNewClicked()
 {
     file_path_.clear();
     is_read_only_ = false;
     ui_->plainTextEdit->clear();
-    update_based_on_read_only_state();
+    updateBasedOnReadOnlyState();
 }
 
-void MainWindow::on_help_clicked()
+void MainWindow::onHelpClicked()
 {
     auto const lang = ui_->english_radio_button->isChecked();
     QFile file(":/help_" + QString(lang ? "en" : "ru") + ".txt");
@@ -136,27 +135,32 @@ void MainWindow::on_help_clicked()
     {
         QTextStream stream(&file);
         auto const text = stream.readAll();
-        QMessageBox::information(this, tr("Помощь"), text);
+        QMessageBox::information(nullptr, tr("Помощь"), text);
     }
 }
 
-void MainWindow::on_quit_clicked()
+void MainWindow::onQuitClicked()
 {
     qDebug() << "i am getting out.. ;)";
     qApp->exit();
 }
 
-void MainWindow::on_english_selected(bool checked)
+void MainWindow::onEnglishSelected(bool checked)
 {
-    switch_language(checked ? "en" : "ru");
+    switchLanguage(checked ? "en" : "ru");
 }
 
-void MainWindow::on_dark_selected(bool checked)
+void MainWindow::onDarkSelected(bool checked)
 {
-    switch_theme(checked ? theme_values::DARK : theme_values::LIGHT);
+    switchTheme(checked ? theme_values::DARK : theme_values::LIGHT);
 }
 
-void MainWindow::load_file()
+void MainWindow::onFinderMenuClicked()
+{
+    finder_dialog_->exec();
+}
+
+void MainWindow::loadFile()
 {
     file_path_ = QFileDialog::getOpenFileName(this,
         tr("Выберите файл для открытия"),
@@ -174,7 +178,7 @@ void MainWindow::load_file()
     }
 }
 
-void MainWindow::update_based_on_read_only_state()
+void MainWindow::updateBasedOnReadOnlyState()
 {
     auto const rd = tr("[Только для чтения]");
     auto tit = tr("Урок 05");
@@ -188,7 +192,7 @@ void MainWindow::update_based_on_read_only_state()
     ui_->plainTextEdit->setReadOnly(is_read_only_);
 }
 
-void MainWindow::switch_language(QString const& language)
+void MainWindow::switchLanguage(QString const& language)
 {
     if (translator_.load(":/gui_" + language))
     {
@@ -212,17 +216,20 @@ void MainWindow::switch_language(QString const& language)
     ui_->label_new->setText(tr("Новый"));
     ui_->label_quit->setText(tr("Выход"));
 
-    update_based_on_read_only_state();
+    ui_->menuTask_5_3->setTitle(tr("Задание 5.3"));
+    ui_->actionFinder->setText(tr("Просмотрщик"));
+
+    finder_dialog_->updateTranslatable();
+
+    updateBasedOnReadOnlyState();
 }
 
-void MainWindow::switch_theme(QString const& theme)
+void MainWindow::switchTheme(QString const& theme)
 {
     auto lst = ui_->centralwidget->findChildren<QWidget*>();
     lst.push_back(ui_->centralwidget);
-    for (auto&& child : lst)
-    {
-        child->setProperty(qss_property_name::THEME, theme);
-        child->style()->unpolish(child);
-        child->style()->polish(child);
-    }
+
+    processStyleInList(lst, theme);
+
+    finder_dialog_->switchTheme(theme);
 }

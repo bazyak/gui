@@ -13,16 +13,23 @@ macx: {
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000  # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    finder_dialog.cc \
+    finder_widget.cc \
     key_event_filter.cc \
     main.cc \
     main_window.cc
 
 HEADERS += \
+    finder_dialog.h \
+    finder_widget.h \
     global_consts.h \
     key_event_filter.h \
+    little_helpers.h \
     main_window.h
 
 FORMS += \
+    finder_dialog.ui \
+    finder_widget.ui \
     main_window.ui
 
 # Default rules for deployment.

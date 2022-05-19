@@ -26,6 +26,15 @@ static inline QString const MAIN
     QLabel[theme=dark] { \
         color: white; \
     } \
+    QDialog { \
+        background-color: #ececec; \
+    } \
+    QDialog[theme=light] { \
+        background-color: #ececec; \
+    } \
+    QDialog[theme=dark] { \
+        background-color: #666666; \
+    } \
     QWidget { \
         background-color: #ececec; \
     } \
@@ -34,6 +43,16 @@ static inline QString const MAIN
     } \
     QWidget[theme=dark] { \
         background-color: #666666; \
+    } \
+    QTreeView { \
+        background-color: #ffffff; \
+    } \
+    QTreeView[theme=light] { \
+        background-color: #ffffff; \
+    } \
+    QTreeView[theme=dark] { \
+        background-color: darkgrey; \
+        color: white; \
     } \
     QPlainTextEdit { \
         background-color: #ffffff; \
