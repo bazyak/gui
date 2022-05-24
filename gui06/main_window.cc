@@ -45,6 +45,7 @@ MainWindow::MainWindow(QWidget* parent)
     tabs_->setElideMode(Qt::ElideRight);
     tabs_->setUsesScrollButtons(true);
     tabs_->setTabsClosable(true);
+    tabs_->setMovable(true);
 
     connect(tabs_.get(), &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
     connect(tabs_.get(), &QTabWidget::currentChanged, this, &MainWindow::tabSelected);
@@ -110,7 +111,7 @@ MainWindow::~MainWindow()
 void MainWindow::onOpenClicked()
 {
     auto const idx = tabs_->currentIndex();
-    if (static_cast<std::size_t>(idx) < docs_.size())
+    if (checkIndex(idx, docs_))
     {
         docs_[idx].is_read_only = false;
     }
@@ -121,7 +122,7 @@ void MainWindow::onOpenClicked()
 void MainWindow::onOpenReadClicked()
 {
     auto const idx = tabs_->currentIndex();
-    if (static_cast<std::size_t>(idx) < docs_.size())
+    if (checkIndex(idx, docs_))
     {
         docs_[idx].is_read_only = true;
     }
@@ -150,7 +151,7 @@ void MainWindow::onSaveClicked()
             dir_ = QFileInfo(f_path).absolutePath();
             settings_->setValue("dir", dir_);
             auto const idx = tabs_->currentIndex();
-            if (static_cast<std::size_t>(idx) < docs_.size())
+            if (checkIndex(idx, docs_))
             {
                 docs_[idx].file_path = f_path;
                 docs_[idx].is_read_only = false;
@@ -190,8 +191,9 @@ void MainWindow::onPrintClicked()
     QPrinter printer;
     QPrintDialog dlg(&printer, this);
     dlg.setWindowTitle(tr("Печать"));
-    if (dlg.exec() != QDialog::Accepted)
-        return;
+
+    if (dlg.exec() != QDialog::Accepted) return;
+
     dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget())->print(&printer);
 }
 
@@ -224,8 +226,8 @@ void MainWindow::tabSelected(int index)
             connect(ui_->copy_action, &QAction::triggered, tab, &CustomPlainTextEdit::copyText);
             connect(ui_->cut_action, &QAction::triggered, tab, &CustomPlainTextEdit::cutText);
             connect(ui_->paste_action, &QAction::triggered, tab, &CustomPlainTextEdit::pasteText);
-            current_tab_ = index;
         }
+        current_tab_ = index;
     }
 }
 
@@ -244,7 +246,7 @@ void MainWindow::loadFile()
             dir_ = QFileInfo(f_path).absolutePath();
             settings_->setValue("dir", dir_);
             auto const idx = tabs_->currentIndex();
-            if (static_cast<std::size_t>(idx) < docs_.size())
+            if (checkIndex(idx, docs_))
             {
                 docs_[idx].file_path = f_path;
             }
@@ -256,8 +258,8 @@ void MainWindow::updateBasedOnReadOnlyState()
 {
     auto const rd = tr("[Только для чтения]");
     QString title { };
-    auto const idx = tabs_->currentIndex();
-    if (static_cast<std::size_t>(idx) < docs_.size())
+    auto const idx = tabs_->currentIndex();    
+    if (checkIndex(idx, docs_))
     {
         auto const f_path = docs_[idx].file_path;
         title = f_path.isEmpty() ? tr("без имени")
@@ -324,9 +326,7 @@ void MainWindow::switchTheme(QString const& theme)
 
 void MainWindow::closeTab(int index)
 {
-    if (index == -1) return;
-
-    if (static_cast<std::size_t>(index) < docs_.size())
+    if (checkIndex(index, docs_))
     {
         if (!docs_[index].is_read_only)
         {
