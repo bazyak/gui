@@ -2,6 +2,7 @@
 #include "ui_main_window.h"
 
 #include <memory>
+
 #include <QDebug>
 #include <QApplication>
 #include <QMainWindow>
@@ -110,6 +111,9 @@ MainWindow::~MainWindow()
 
 void MainWindow::onOpenClicked()
 {
+    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    if (!tab) return;
+
     auto const idx = tabs_->currentIndex();
     if (checkIndex(idx, docs_))
     {
@@ -121,6 +125,9 @@ void MainWindow::onOpenClicked()
 
 void MainWindow::onOpenReadClicked()
 {
+    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    if (!tab) return;
+
     auto const idx = tabs_->currentIndex();
     if (checkIndex(idx, docs_))
     {
@@ -132,6 +139,9 @@ void MainWindow::onOpenReadClicked()
 
 void MainWindow::onSaveClicked()
 {
+    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    if (!tab) return;
+
     auto const f_path = QFileDialog::getSaveFileName(this,
         tr("Выберите файл для сохранения"),
         dir_, tr("Текстовый файл (*.txt);;Любой файл (*.*)"));
@@ -147,7 +157,7 @@ void MainWindow::onSaveClicked()
         if (file.open(QFile::WriteOnly))
         {
             QTextStream stream(&file);
-            stream << dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget())->toPlainText();
+            stream << tab->toPlainText();
             dir_ = QFileInfo(f_path).absolutePath();
             settings_->setValue("dir", dir_);
             auto const idx = tabs_->currentIndex();
@@ -188,13 +198,16 @@ void MainWindow::onQuitClicked()
 
 void MainWindow::onPrintClicked()
 {
+    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    if (!tab) return;
+
     QPrinter printer;
     QPrintDialog dlg(&printer, this);
     dlg.setWindowTitle(tr("Печать"));
 
     if (dlg.exec() != QDialog::Accepted) return;
 
-    dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget())->print(&printer);
+    tab->print(&printer);
 }
 
 void MainWindow::onEnglishSelected(bool checked)
@@ -233,6 +246,9 @@ void MainWindow::tabSelected(int index)
 
 void MainWindow::loadFile()
 {
+    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    if (!tab) return;
+
     auto const f_path = QFileDialog::getOpenFileName(this,
         tr("Выберите файл для открытия"),
         dir_, tr("Текстовые файлы (*.txt);;Все файлы (*.*)"));
@@ -242,7 +258,7 @@ void MainWindow::loadFile()
         if (file.open(QFile::ReadOnly | QFile::ExistingOnly))
         {
             QTextStream stream(&file);
-            dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget())->setPlainText(stream.readAll());
+            tab->setPlainText(stream.readAll());
             dir_ = QFileInfo(f_path).absolutePath();
             settings_->setValue("dir", dir_);
             auto const idx = tabs_->currentIndex();
@@ -256,6 +272,9 @@ void MainWindow::loadFile()
 
 void MainWindow::updateBasedOnReadOnlyState()
 {
+    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    if (!tab) return;
+
     auto const rd = tr("[Только для чтения]");
     QString title { };
     auto const idx = tabs_->currentIndex();    
@@ -266,7 +285,7 @@ void MainWindow::updateBasedOnReadOnlyState()
                                  : QFileInfo(f_path).fileName()
                                    + (docs_[idx].is_read_only ? " " + rd : " ");
         tabs_->setTabText(idx, title);
-        dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget())->setReadOnly(docs_[idx].is_read_only);
+        tab->setReadOnly(docs_[idx].is_read_only);
     }
 }
 
@@ -325,7 +344,7 @@ void MainWindow::switchTheme(QString const& theme)
 }
 
 void MainWindow::closeTab(int index)
-{
+{  
     if (checkIndex(index, docs_))
     {
         if (!docs_[index].is_read_only)

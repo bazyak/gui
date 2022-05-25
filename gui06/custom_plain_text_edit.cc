@@ -1,6 +1,7 @@
 #include "custom_plain_text_edit.h"
 
 #include <memory>
+
 #include <QApplication>
 #include <QClipboard>
 #include <QAction>
