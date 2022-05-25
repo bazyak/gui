@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>help_ru.txt</file>
+        <file>help_en.txt</file>
+        <file>gui_en.qm</file>
+        <file>themes.qss</file>
+    </qresource>
+</RCC>
