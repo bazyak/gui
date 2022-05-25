@@ -1,10 +1,11 @@
 #pragma once
 
+#include <vector>
+
 #include <QList>
 #include <QWidget>
 #include <QString>
 #include <QStyle>
-#include <vector>
 
 #include "global_consts.h"
 

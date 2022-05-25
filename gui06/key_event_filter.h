@@ -1,7 +1,8 @@
 #pragma once
 
-#include <QObject>
 #include <unordered_map>
+
+#include <QObject>
 #include <QString>
 
 class QEvent;

@@ -1,11 +1,12 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
 #include <QMainWindow>
 #include <QTranslator>
 #include <QString>
 #include <QTabWidget>
-#include <memory>
-#include <vector>
 
 #include "key_event_filter.h"
 #include "custom_plain_text_edit.h"

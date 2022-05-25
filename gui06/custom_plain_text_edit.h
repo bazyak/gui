@@ -1,8 +1,9 @@
 #pragma once
 
+#include <memory>
+
 #include <QPlainTextEdit>
 #include <QMenu>
-#include <memory>
 
 class QContextMenuEvent;
 class QWidget;

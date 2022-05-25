@@ -2,6 +2,7 @@
 #include "ui_finder_dialog.h"
 
 #include <memory.h>
+
 #include <QPushButton>
 #include <QStyle>
 
