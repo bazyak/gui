@@ -48,11 +48,16 @@ private slots:
     void tabSelected(int index);
 
 private:
-    void loadFile();
+    void loadFile(CustomPlainTextEdit* tab);
     void updateBasedOnReadOnlyState();
     void switchLanguage(QString const& language);
     void switchTheme(QString const& theme);
     void closeTab(int index);
+    void initShortcuts();
+    void initTabs();
+    void connectButtons();
+    void connectActions();
+    void initEventFilter();
 
     QTranslator translator_ { };
     QString dir_ { };

@@ -41,68 +41,14 @@ MainWindow::MainWindow(QWidget* parent)
     Q_INIT_RESOURCE(res);
     setFixedSize(width(), height());
 
-    tabs_ = std::make_unique<QTabWidget>(ui_->centralwidget);
-    tabs_->setGeometry(QRect(30, 30, 301, 211));
-    tabs_->setElideMode(Qt::ElideRight);
-    tabs_->setUsesScrollButtons(true);
-    tabs_->setTabsClosable(true);
-    tabs_->setMovable(true);
-
-    connect(tabs_.get(), &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
-    connect(tabs_.get(), &QTabWidget::currentChanged, this, &MainWindow::tabSelected);
-    onNewClicked();
-
     dir_ = settings_->contains("dir")
             ? settings_->value("dir", "").toString()
             : QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
 
-    connect(ui_->new_button, &QPushButton::clicked, this, &MainWindow::onNewClicked);
-    connect(ui_->open_button, &QPushButton::clicked, this, &MainWindow::onOpenClicked);
-    connect(ui_->open_read_button, &QPushButton::clicked, this, &MainWindow::onOpenReadClicked);
-    connect(ui_->save_button, &QPushButton::clicked, this, &MainWindow::onSaveClicked);
-    connect(ui_->help_button, &QPushButton::clicked, this, &MainWindow::onHelpClicked);
-    connect(ui_->english_radio_button, &QRadioButton::toggled, this, &MainWindow::onEnglishSelected);
-    connect(ui_->dark_radio_button, &QRadioButton::toggled, this, &MainWindow::onDarkSelected);
-    connect(ui_->print_button, &QPushButton::clicked, this, &MainWindow::onPrintClicked);
-
-    hot_keys_[ui_->open_edit->objectName()] = std::make_shared<QShortcut>(QKeySequence("Ctrl+O"), this);
-    hot_keys_[ui_->save_edit->objectName()] = std::make_shared<QShortcut>(QKeySequence("Ctrl+S"), this);
-    hot_keys_[ui_->new_edit->objectName()] = std::make_shared<QShortcut>(QKeySequence("Ctrl+N"), this);
-    hot_keys_[ui_->quit_edit->objectName()] = std::make_shared<QShortcut>(QKeySequence("Ctrl+Q"), this);
-
-    auto hot_key = hot_keys_[ui_->open_edit->objectName()]->key();
-    ui_->open_edit->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
-    hot_key = hot_keys_[ui_->save_edit->objectName()]->key();
-    ui_->save_edit->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
-    hot_key = hot_keys_[ui_->new_edit->objectName()]->key();
-    ui_->new_edit->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
-    hot_key = hot_keys_[ui_->quit_edit->objectName()]->key();
-    ui_->quit_edit->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
-
-    connect(hot_keys_[ui_->open_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onOpenClicked);
-    connect(hot_keys_[ui_->save_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onSaveClicked);
-    connect(hot_keys_[ui_->new_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onNewClicked);
-    connect(hot_keys_[ui_->quit_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onQuitClicked);
-
-    connect(ui_->finder_action, &QAction::triggered, this, &MainWindow::onFinderMenuClicked);
-
-    ev_filter_ = std::make_shared<KeyEventFilter>(hot_keys_);
-    ui_->open_edit->installEventFilter(ev_filter_.get());
-    ui_->save_edit->installEventFilter(ev_filter_.get());
-    ui_->new_edit->installEventFilter(ev_filter_.get());
-    ui_->quit_edit->installEventFilter(ev_filter_.get());
-
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
-    connect(ui_->copy_action, &QAction::triggered, tab, &CustomPlainTextEdit::copyText);
-    connect(ui_->cut_action, &QAction::triggered, tab, &CustomPlainTextEdit::cutText);
-    connect(ui_->paste_action, &QAction::triggered, tab, &CustomPlainTextEdit::pasteText);
-    connect(ui_->open_action, &QAction::triggered, this, &MainWindow::onOpenClicked);
-    connect(ui_->open_rd_action, &QAction::triggered, this, &MainWindow::onOpenReadClicked);
-    connect(ui_->save_action, &QAction::triggered, this, &MainWindow::onSaveClicked);
-    connect(ui_->help_action, &QAction::triggered, this, &MainWindow::onHelpClicked);
-    connect(ui_->print_action, &QAction::triggered, this, &MainWindow::onPrintClicked);
-
-    tabs_->setFocus();
+    initTabs();
+    connectButtons();
+    initShortcuts();
+    initEventFilter();
 }
 
 MainWindow::~MainWindow()
@@ -119,7 +65,7 @@ void MainWindow::onOpenClicked()
     {
         docs_[idx].is_read_only = false;
     }
-    loadFile();
+    loadFile(tab);
     updateBasedOnReadOnlyState();
 }
 
@@ -133,7 +79,7 @@ void MainWindow::onOpenReadClicked()
     {
         docs_[idx].is_read_only = true;
     }
-    loadFile();
+    loadFile(tab);
     updateBasedOnReadOnlyState();
 }
 
@@ -244,9 +190,8 @@ void MainWindow::tabSelected(int index)
     }
 }
 
-void MainWindow::loadFile()
+void MainWindow::loadFile(CustomPlainTextEdit* tab)
 {
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
     if (!tab) return;
 
     auto const f_path = QFileDialog::getOpenFileName(this,
@@ -364,4 +309,77 @@ void MainWindow::closeTab(int index)
         docs_[index].is_read_only = false;
         docs_.erase(std::next(docs_.begin(), index));
     }
+}
+
+void MainWindow::initShortcuts()
+{
+    hot_keys_[ui_->open_edit->objectName()] = std::make_shared<QShortcut>(QKeySequence("Ctrl+O"), this);
+    hot_keys_[ui_->save_edit->objectName()] = std::make_shared<QShortcut>(QKeySequence("Ctrl+S"), this);
+    hot_keys_[ui_->new_edit->objectName()] = std::make_shared<QShortcut>(QKeySequence("Ctrl+N"), this);
+    hot_keys_[ui_->quit_edit->objectName()] = std::make_shared<QShortcut>(QKeySequence("Ctrl+Q"), this);
+
+    auto hot_key = hot_keys_[ui_->open_edit->objectName()]->key();
+    ui_->open_edit->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
+    hot_key = hot_keys_[ui_->save_edit->objectName()]->key();
+    ui_->save_edit->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
+    hot_key = hot_keys_[ui_->new_edit->objectName()]->key();
+    ui_->new_edit->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
+    hot_key = hot_keys_[ui_->quit_edit->objectName()]->key();
+    ui_->quit_edit->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
+
+    connect(hot_keys_[ui_->open_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onOpenClicked);
+    connect(hot_keys_[ui_->save_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onSaveClicked);
+    connect(hot_keys_[ui_->new_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onNewClicked);
+    connect(hot_keys_[ui_->quit_edit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onQuitClicked);
+}
+
+void MainWindow::initTabs()
+{
+    tabs_ = std::make_unique<QTabWidget>(ui_->centralwidget);
+    tabs_->setGeometry(QRect(30, 30, 301, 211));
+    tabs_->setElideMode(Qt::ElideRight);
+    tabs_->setUsesScrollButtons(true);
+    tabs_->setTabsClosable(true);
+    tabs_->setMovable(true);
+
+    connect(tabs_.get(), &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
+    connect(tabs_.get(), &QTabWidget::currentChanged, this, &MainWindow::tabSelected);
+    onNewClicked();
+    connectActions();
+    tabs_->setFocus();
+}
+
+void MainWindow::connectButtons()
+{
+    connect(ui_->new_button, &QPushButton::clicked, this, &MainWindow::onNewClicked);
+    connect(ui_->open_button, &QPushButton::clicked, this, &MainWindow::onOpenClicked);
+    connect(ui_->open_read_button, &QPushButton::clicked, this, &MainWindow::onOpenReadClicked);
+    connect(ui_->save_button, &QPushButton::clicked, this, &MainWindow::onSaveClicked);
+    connect(ui_->help_button, &QPushButton::clicked, this, &MainWindow::onHelpClicked);
+    connect(ui_->english_radio_button, &QRadioButton::toggled, this, &MainWindow::onEnglishSelected);
+    connect(ui_->dark_radio_button, &QRadioButton::toggled, this, &MainWindow::onDarkSelected);
+    connect(ui_->print_button, &QPushButton::clicked, this, &MainWindow::onPrintClicked);
+}
+
+void MainWindow::connectActions()
+{
+    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    connect(ui_->copy_action, &QAction::triggered, tab, &CustomPlainTextEdit::copyText);
+    connect(ui_->cut_action, &QAction::triggered, tab, &CustomPlainTextEdit::cutText);
+    connect(ui_->paste_action, &QAction::triggered, tab, &CustomPlainTextEdit::pasteText);
+    connect(ui_->open_action, &QAction::triggered, this, &MainWindow::onOpenClicked);
+    connect(ui_->open_rd_action, &QAction::triggered, this, &MainWindow::onOpenReadClicked);
+    connect(ui_->save_action, &QAction::triggered, this, &MainWindow::onSaveClicked);
+    connect(ui_->help_action, &QAction::triggered, this, &MainWindow::onHelpClicked);
+    connect(ui_->print_action, &QAction::triggered, this, &MainWindow::onPrintClicked);
+    connect(ui_->finder_action, &QAction::triggered, this, &MainWindow::onFinderMenuClicked);
+}
+
+void MainWindow::initEventFilter()
+{
+    ev_filter_ = std::make_shared<KeyEventFilter>(hot_keys_);
+    ui_->open_edit->installEventFilter(ev_filter_.get());
+    ui_->save_edit->installEventFilter(ev_filter_.get());
+    ui_->new_edit->installEventFilter(ev_filter_.get());
+    ui_->quit_edit->installEventFilter(ev_filter_.get());
 }
