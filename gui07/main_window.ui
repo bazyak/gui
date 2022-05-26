@@ -48,7 +48,7 @@
       <x>600</x>
       <y>60</y>
       <width>151</width>
-      <height>301</height>
+      <height>291</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -557,16 +557,6 @@
     </property>
     <property name="text">
      <string>Font</string>
-    </property>
-   </widget>
-   <widget class="QPlainTextEdit" name="plainTextEdit">
-    <property name="geometry">
-     <rect>
-      <x>230</x>
-      <y>10</y>
-      <width>341</width>
-      <height>171</height>
-     </rect>
     </property>
    </widget>
   </widget>

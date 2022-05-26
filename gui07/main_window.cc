@@ -212,7 +212,7 @@ void MainWindow::onFontClicked()
     auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
     if (!tab) return;
 
-    QFont font = ui_->plainTextEdit->textCursor().charFormat().font();
+    QFont font = tab->textCursor().charFormat().font();
     QFontDialog fntDlg(font, this);
     bool flag { false };
     font = fntDlg.getFont(&flag, font);
@@ -221,13 +221,13 @@ void MainWindow::onFontClicked()
     {
         if (!tab->textCursor().hasSelection())
         {
-            auto fmt = ui_->plainTextEdit->currentCharFormat();
+            auto fmt = tab->currentCharFormat();
             fmt.setFont(font);
-            ui_->plainTextEdit->setCurrentCharFormat(fmt);
+            tab->setCurrentCharFormat(fmt);
         }
         QTextCharFormat fmt;
         fmt.setFont(font);
-        ui_->plainTextEdit->textCursor().setCharFormat(fmt);
+        tab->textCursor().setCharFormat(fmt);
     }
 }
 
@@ -374,12 +374,11 @@ void MainWindow::initShortcuts()
 void MainWindow::initTabs()
 {
     tabs_ = std::make_unique<QTabWidget>(ui_->centralwidget);
-    tabs_->setGeometry(100, 100, 300, 300);
     tabs_->setElideMode(Qt::ElideRight);
     tabs_->setUsesScrollButtons(true);
     tabs_->setTabsClosable(true);
     tabs_->setMovable(true);
-    //ui_->verticalLayout->addWidget(tabs_.get());
+    ui_->verticalLayout->addWidget(tabs_.get());
 
     connect(tabs_.get(), &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
     connect(tabs_.get(), &QTabWidget::currentChanged, this, &MainWindow::tabSelected);
