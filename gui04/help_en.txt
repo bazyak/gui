@@ -1,0 +1,4 @@
+Open - open file
+Open for reading - open file in read only mode
+Save - save file
+Help - open help (htis window)
