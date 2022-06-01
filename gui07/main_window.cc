@@ -138,9 +138,14 @@ void MainWindow::onSaveClicked()
 
 void MainWindow::onNewClicked()
 {
-    auto const idx = tabs_->addTab(new CustomPlainTextEdit(tabs_.get()), tr_values::TAB_DEF_TITLE());
+    auto const tab = new CustomPlainTextEdit(tabs_.get());
+    auto const idx = tabs_->addTab(tab, tr_values::TAB_DEF_TITLE());
     docs_.push_back({ });
     tabs_->setCurrentIndex(idx);
+
+    QList<QWidget*> lst { tab };
+
+    processStyleInList(lst, settings_dialog_->getTheme());
 }
 
 void MainWindow::onHelpClicked()

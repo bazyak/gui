@@ -19,7 +19,8 @@ public:
     ~SettingsDialog();
     void updateTranslatable();
     void switchTheme(QString const& theme);
-    bool getLanguage();
+    bool getLanguage() const;
+    QString getTheme() const;
     void setLanguageRadioButton(QString const& language);
     void setThemeRadioButton(QString const& theme);
     QLineEdit* getOpenEdit();

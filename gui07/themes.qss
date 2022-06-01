@@ -80,21 +80,20 @@ QTreeView[theme=dark]
     color: white;
 }
 
-QPlainTextEdit
+QTextEdit
 {
     background-color: #ffffff;
 }
 
-QPlainTextEdit[theme=light]
+QTextEdit[theme=light]
 {
     background-color: #ffffff;
 }
 
-QPlainTextEdit[theme=dark]
+QTextEdit[theme=dark]
 {
     background-color: darkgrey;
     color: white;
-
 }
 
 QPushButton

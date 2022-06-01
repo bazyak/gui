@@ -76,9 +76,16 @@ void SettingsDialog::switchTheme(QString const& theme)
     processStyleInList(lst, theme);
 }
 
-bool SettingsDialog::getLanguage()
+bool SettingsDialog::getLanguage() const
 {
     return ui_->english_radio_button->isChecked();
+}
+
+QString SettingsDialog::getTheme() const
+{
+    return ui_->dark_radio_button->isChecked()
+            ? theme_values::DARK
+            : theme_values::LIGHT;
 }
 
 void SettingsDialog::setLanguageRadioButton(QString const& language)

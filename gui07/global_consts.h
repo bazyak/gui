@@ -152,16 +152,13 @@ QString inline const MAIN
     } \
     QTextEdit { \
         background-color: #ffffff; \
-        text-indent: 40px; \
     } \
     QTextEdit[theme=light] { \
         background-color: #ffffff; \
-        text-indent: 40px; \
     } \
     QTextEdit[theme=dark] { \
         background-color: darkgrey; \
         color: white; \
-        text-indent: 40px; \
     } \
     QPushButton { \
         background-color: #ffffff; \
