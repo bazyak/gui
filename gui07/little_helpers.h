@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QString>
 #include <QStyle>
+
 #include <vector>
 
 #include "global_consts.h"
@@ -12,7 +13,7 @@ inline void processStyleInList(QList<QWidget*>& lst, QString const& theme)
 {
     for (auto&& child : lst)
     {
-        child->setProperty(qss_property_name::THEME, theme);
+        child->setProperty(conf_param_name::THEME, theme);
         child->style()->unpolish(child);
         child->style()->polish(child);
     }

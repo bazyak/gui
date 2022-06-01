@@ -2,12 +2,13 @@
 
 #include <QPlainTextEdit>
 #include <QMenu>
+
 #include <memory>
 
 class QContextMenuEvent;
 class QWidget;
 
-class CustomPlainTextEdit : public QPlainTextEdit
+class CustomPlainTextEdit : public QTextEdit
 {
     Q_OBJECT
 

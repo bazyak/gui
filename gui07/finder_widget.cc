@@ -1,10 +1,11 @@
 #include "finder_widget.h"
 #include "ui_finder_widget.h"
 
-#include <memory.h>
 #include <QWidget>
 #include <QTreeView>
 #include <QFileSystemModel>
+
+#include <memory>
 
 class FinderWidget::PrivateData
 {

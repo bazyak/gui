@@ -1,9 +1,10 @@
 #include "finder_dialog.h"
 #include "ui_finder_dialog.h"
 
-#include <memory.h>
 #include <QPushButton>
 #include <QStyle>
+
+#include <memory>
 
 #include "finder_widget.h"
 #include "global_consts.h"
@@ -26,8 +27,8 @@ FinderDialog::~FinderDialog()
 
 void FinderDialog::updateTranslatable()
 {
-    ui_->exit_button->setText(tr("Закрыть"));
-    this->setWindowTitle(tr("Просмотрщик"));
+    ui_->exit_button->setText(tr_values::FINDER_CLOSE_BTN());
+    this->setWindowTitle(tr_values::FINDER_ACTION());
 }
 
 void FinderDialog::switchTheme(QString const& theme)

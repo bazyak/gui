@@ -8,13 +8,16 @@
 #include <QKeySequence>
 #include <QKeyCombination>
 #include <QShortcut>
+#include <QSettings>
 
-KeyEventFilter::KeyEventFilter(hk_map_t& m, QObject* parent)
+#include "main_window.h"
+
+KeyEventFilter::KeyEventFilter(HotkeysMap& m, QObject* parent)
     : QObject(parent)
     , map_(m)
+    , parent_(dynamic_cast<MainWindow*>(parent))
 {
 }
-
 
 bool KeyEventFilter::eventFilter(QObject* obj, QEvent* event)
 {
@@ -32,6 +35,7 @@ bool KeyEventFilter::eventFilter(QObject* obj, QEvent* event)
 
         // setup new hotkey
         map_[widget->objectName()]->setKey(QKeySequence(hot_key));
+        parent_->getSettings()->setValue(widget->objectName(), QKeySequence(hot_key).toString());
 
         // pretty print hotkey
         auto const kk = QKeyCombination(Qt::Key(key));

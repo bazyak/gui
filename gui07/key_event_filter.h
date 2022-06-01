@@ -1,23 +1,26 @@
 #pragma once
 
 #include <QObject>
-#include <unordered_map>
 #include <QString>
+
+#include <unordered_map>
 
 class QEvent;
 class QShortcut;
+class MainWindow;
 
 class KeyEventFilter : public QObject
 {
     Q_OBJECT
 public:
-    using hk_map_t = std::unordered_map<QString, std::shared_ptr<QShortcut>>;
+    using HotkeysMap = std::unordered_map<QString, std::shared_ptr<QShortcut>>;
 
-    explicit KeyEventFilter(hk_map_t& m, QObject* parent = nullptr);
+    explicit KeyEventFilter(HotkeysMap& m, QObject* parent = nullptr);
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
 
 private:
-    hk_map_t& map_;
+    HotkeysMap& map_;
+    MainWindow* parent_ { nullptr };
 };

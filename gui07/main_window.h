@@ -4,6 +4,8 @@
 #include <QTranslator>
 #include <QString>
 #include <QTabWidget>
+#include <QTextCharFormat>
+
 #include <memory>
 #include <vector>
 
@@ -15,14 +17,20 @@ namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
 class QSettings;
-class KeyEventFilter;
 class FinderDialog;
+class SettingsDialog;
 class QWidget;
 
-struct doc_props
+struct DocProps
 {
     QString file_path { };
     bool is_read_only { false };
+};
+
+struct CharFmt
+{
+    QTextCharFormat fmt { };
+    Qt::Alignment align { };
 };
 
 class MainWindow : public QMainWindow
@@ -32,6 +40,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
+    void switchLanguage(QString const& lang);
+    void switchTheme(QString const& theme);
+    QSettings* getSettings();
 
 private slots:
     void onOpenClicked();
@@ -41,20 +52,19 @@ private slots:
     void onHelpClicked();
     void onQuitClicked();
     void onPrintClicked();
-    void onEnglishSelected(bool checked);
-    void onDarkSelected(bool checked);
+    void onSettingsClicked();
     void onFinderMenuClicked();
     void tabSelected(int index);
     void onLeftClicked();
     void onCenterClicked();
     void onRightClicked();
     void onFontClicked();
+    void onCopyFormatClicked();
+    void onApplyFormatClicked();
 
 private:
     void loadFile(CustomPlainTextEdit* tab);
     void updateBasedOnReadOnlyState();
-    void switchLanguage(QString const& language);
-    void switchTheme(QString const& theme);
     void closeTab(int index);
     void initShortcuts();
     void initTabs();
@@ -64,13 +74,15 @@ private:
 
     QTranslator translator_ { };
     QString dir_ { };
-    KeyEventFilter::hk_map_t hot_keys_ { };
-    std::vector<doc_props> docs_ { };
-    int current_tab_ { 0 };
+    KeyEventFilter::HotkeysMap hot_keys_ { };
+    std::vector<DocProps> docs_ { };
+    int current_tab_ = 0;
+    CharFmt fmt_ { };
 
     std::unique_ptr<Ui::MainWindow> ui_;
     std::unique_ptr<QSettings> settings_;
-    std::shared_ptr<KeyEventFilter> ev_filter_;
     std::unique_ptr<FinderDialog> finder_dialog_;
+    std::unique_ptr<SettingsDialog> settings_dialog_;
+    std::shared_ptr<KeyEventFilter> ev_filter_;
     std::unique_ptr<QTabWidget> tabs_;
 };

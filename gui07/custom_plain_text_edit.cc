@@ -1,18 +1,22 @@
 #include "custom_plain_text_edit.h"
 
-#include <memory>
 #include <QApplication>
 #include <QClipboard>
 #include <QAction>
 #include <QMenu>
 
+#include <memory>
+
+#include "global_consts.h"
+
 CustomPlainTextEdit::CustomPlainTextEdit(QWidget* parent)
-    : QPlainTextEdit(parent)
+    : QTextEdit(parent)
 {
     menu_ = std::make_unique<QMenu>(this);
-    QAction* copyAction = menu_->addAction(tr("Копировать"));
-    QAction* cutAction = menu_->addAction(tr("Вырезать"));
-    QAction* pasteAction = menu_->addAction(tr("Вставить"));
+    setViewportMargins(0, 0, 15, 0);
+    QAction* copyAction = menu_->addAction(tr_values::COPY_ACTION());
+    QAction* cutAction = menu_->addAction(tr_values::CUT_ACTION());
+    QAction* pasteAction = menu_->addAction(tr_values::PASTE_ACTION());
     connect(copyAction, &QAction::triggered, this, &CustomPlainTextEdit::copyText);
     connect(cutAction, &QAction::triggered, this, &CustomPlainTextEdit::cutText);
     connect(pasteAction, &QAction::triggered, this, &CustomPlainTextEdit::pasteText);

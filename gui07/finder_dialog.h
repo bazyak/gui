@@ -1,8 +1,10 @@
 #pragma once
 
-#include <memory>
 #include <QDialog>
-#include <QString>
+
+#include <memory>
+
+class QString;
 
 namespace Ui { class FinderDialog; }
 

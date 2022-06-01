@@ -18,7 +18,8 @@ SOURCES += \
     finder_widget.cc \
     key_event_filter.cc \
     main.cc \
-    main_window.cc
+    main_window.cc \
+    settings_dialog.cc
 
 HEADERS += \
     custom_plain_text_edit.h \
@@ -27,12 +28,14 @@ HEADERS += \
     global_consts.h \
     key_event_filter.h \
     little_helpers.h \
-    main_window.h
+    main_window.h \
+    settings_dialog.h
 
 FORMS += \
     finder_dialog.ui \
     finder_widget.ui \
-    main_window.ui
+    main_window.ui \
+    settings_dialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

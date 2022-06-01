@@ -1,8 +1,9 @@
 #pragma once
 
-#include <memory>
 #include <QWidget>
 #include <QModelIndex>
+
+#include <memory>
 
 namespace Ui { class FinderWidget; }
 
