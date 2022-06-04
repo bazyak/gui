@@ -1,83 +1,70 @@
 #include "finder_widget.h"
 
+#include <QObject>
 #include <QWidget>
+#include <QFileSystemModel>
 #include <QModelIndex>
 #include <QTreeView>
-#include <QFileSystemModel>
-#include <QFileInfo>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QDirIterator>
 #include <QMessageBox>
+#include <QStringList>
+#include <QEvent>
 
 #include <memory>
+
+#include "seeker.h"
+#include "user_event.h"
 
 class FinderWidget::PrivateData
 {
 public:
-    explicit PrivateData()
-    {
-        layout_ = std::make_unique<QVBoxLayout>();
-        layout_->setContentsMargins(10, 10, 10, 10);
-
-        current_dir_label_ = std::make_unique<QLabel>();
-        layout_->addWidget(current_dir_label_.get());
-
-        tree_view_ = std::make_unique<QTreeView>();
-        tree_view_->setEditTriggers(QAbstractItemView::NoEditTriggers);
-        tree_view_->setSelectionMode(QAbstractItemView::SingleSelection);
-        tree_view_->header()->setVisible(false);
-        layout_->addWidget(tree_view_.get());
-
-        horizontal_layout_ = std::make_unique<QHBoxLayout>();
-        horizontal_layout_->setContentsMargins(0, 0, 0, 0);
-
-        to_find_ = std::make_unique<QLineEdit>();
-        to_find_->setPlaceholderText("Введите имя папки или файла");
-        horizontal_layout_->addWidget(to_find_.get());
-
-        find_btn_ = std::make_unique<QPushButton>();
-        find_btn_->setText("Найти");
-        horizontal_layout_->addWidget(find_btn_.get());
-
-        layout_->addLayout(horizontal_layout_.get());
-    }
+    explicit PrivateData() { }
     ~PrivateData() { }
 
     int const kWidth = 700;
     int const kHeight = 600;
 
-    std::unique_ptr<QVBoxLayout> layout_;
-    std::unique_ptr<QLabel> current_dir_label_;
-    std::unique_ptr<QTreeView> tree_view_;
-    std::unique_ptr<QLineEdit> to_find_;
-    std::unique_ptr<QPushButton> find_btn_;
-    std::unique_ptr<QHBoxLayout> horizontal_layout_;
-    QFileSystemModel model_;
+    QTreeView* fsTreeView { nullptr };
+    QLineEdit* toFindEdit { nullptr };
+    QPushButton* findBtn { nullptr };
+    QPushButton* resetBtn { nullptr };
+    QPushButton* nextBtn { nullptr };
+    QPushButton* prevBtn { nullptr };
+    QLabel* curDirLabel { nullptr };
+
+    int curIdx = 0;
+    QStringList found { };
+    QFileSystemModel model { };
+    Seeker* seeker { nullptr };
 };
 
 FinderWidget::FinderWidget(QWidget* parent)
     : QWidget(parent)
-    , data_(std::make_unique<PrivateData>())
+    , data(std::make_unique<PrivateData>())
 {
-    setFixedSize(data_->kWidth, data_->kHeight);
-    setWindowModality(Qt::NonModal);
+    constructGui();
 
-    this->setLayout(data_->layout_.get());
+    data->model.setRootPath("");
+    data->fsTreeView->setModel(&data->model);
 
-    data_->model_.setRootPath("");
-    data_->tree_view_->setModel(&data_->model_);
-
-    for (int i = 1; i < data_->model_.columnCount(); ++i)
+    for (int i = 1; i < data->model.columnCount(); ++i)
     {
-        data_->tree_view_->hideColumn(i);
+        data->fsTreeView->hideColumn(i);
     }
-    connect(data_->tree_view_.get(), &QTreeView::clicked, this, &FinderWidget::elementClicked);
-    connect(data_->find_btn_.get(), &QPushButton::clicked, this, &FinderWidget::onFindBtnClicked);
+    connect(data->fsTreeView, &QTreeView::clicked, this, &FinderWidget::elementClicked);
+    connect(data->toFindEdit, &QLineEdit::returnPressed, this, &FinderWidget::findFileSystemObject);
+    connect(data->findBtn, &QPushButton::clicked, this, &FinderWidget::findFileSystemObject);
+    connect(data->resetBtn, &QPushButton::clicked, this, &FinderWidget::resetSearch);
+    connect(data->prevBtn, &QPushButton::clicked, this, &FinderWidget::onPrevFoundClicked);
+    connect(data->nextBtn, &QPushButton::clicked, this, &FinderWidget::onNextFoundClicked);
+
+    data->seeker = new Seeker(this);
+    connect(data->seeker, &Seeker::resultReady, this, &FinderWidget::onSearchFinished);
 }
 
 FinderWidget::~FinderWidget()
@@ -86,49 +73,179 @@ FinderWidget::~FinderWidget()
 
 int FinderWidget::getWidth() const
 {
-    return data_->kWidth;
+    return data->kWidth;
 }
 
 int FinderWidget::getHeight() const
 {
-    return data_->kHeight;
+    return data->kHeight;
+}
+
+void FinderWidget::customEvent(QEvent* event)
+{
+    if (event->type() == UserEvent::TypeEvent)
+    {
+        data->found.emplace_back(static_cast<UserEvent*>(event)->textMsg());
+    }
 }
 
 void FinderWidget::elementClicked(QModelIndex const& current)
 {
-    auto const dir = data_->model_.fileInfo(current).isDir()
-            ? data_->model_.fileInfo(current).absoluteFilePath()
-            : data_->model_.fileInfo(current).absolutePath();
-    data_->current_dir_label_->setText(dir);
-    data_->current_dir_label_->setToolTip(dir);
+    printCurrentDir(current);
 }
 
-void FinderWidget::onFindBtnClicked()
+void FinderWidget::findFileSystemObject()
 {
-    auto const to_find = data_->to_find_->text();
+    auto const to_find = data->toFindEdit->text();
     if (!to_find.length()) return;
 
-    if (!data_->current_dir_label_->text().length())
+    if (!data->curDirLabel->text().length())
     {
-        QMessageBox::warning(this, "Nowhere to find", "Nowhere to find. Please select search directory");
+        QMessageBox::warning(this, "Nowhere to find",
+                             "Please select search directory");
+        return;
     }
+    resetFindContainer();
+    disableAllCmdComps();
+    enableResetBtn();
 
-    QDirIterator it(data_->current_dir_label_->text(), QDir::NoFilter, QDirIterator::Subdirectories);
-    auto flag = false;
-    while (it.hasNext())
+    data->seeker->setInputValues(to_find, data->curDirLabel->text());
+    data->seeker->start();
+}
+
+void FinderWidget::onPrevFoundClicked()
+{
+    selectFoundResult(false);
+}
+
+void FinderWidget::onNextFoundClicked()
+{
+    selectFoundResult(true);
+}
+
+void FinderWidget::resetSearch()
+{
+    data->seeker->stopWork();
+    for (; data->seeker->isRunning(); );
+}
+
+void FinderWidget::onSearchFinished(bool stopped)
+{
+    disableAllCmdComps();
+    enableFindComps();
+    if (stopped)
     {
-        auto const el = QFileInfo(it.next());
-        auto name = el.isFile() ? el.fileName()
-                                     : el.dir().dirName();
-        if (name == to_find)
+        resetFindContainer();
+        QMessageBox::warning(this, "Searching results", "Search reset");
+        return;
+    }
+    if (data->found.isEmpty())
+    {
+        QMessageBox::warning(this, "Searching results",
+                             "Search completed. Object not found");
+        return;
+    }
+    QMessageBox::information(this, "Searching results",
+                             "Search completed.\nResults are available by buttons \"<\" и \">\"");
+    enablePrevNextBtns();
+    onNextFoundClicked();
+}
+
+void FinderWidget::printCurrentDir(QModelIndex const& current)
+{
+    auto const dir = data->model.fileInfo(current).isDir()
+            ? data->model.fileInfo(current).absoluteFilePath()
+            : data->model.fileInfo(current).absolutePath();
+    data->curDirLabel->setText(dir);
+    data->curDirLabel->setToolTip(dir);
+}
+
+void FinderWidget::selectFoundResult(bool next)
+{
+    if (data->curIdx < data->found.size())
+    {
+        auto const last = data->found.size() - 1;
+        if (next)
         {
-            flag = true;
-            QMessageBox::information(this, "", name);
-            break;
+            data->curIdx = data->curIdx != last ? data->curIdx + 1 : 0;
         }
+        else
+        {
+            data->curIdx = !data->curIdx ? last : data->curIdx - 1;
+        }
+        auto const idx = data->model.index(data->found[data->curIdx]);
+        data->fsTreeView->setCurrentIndex(idx);
+        printCurrentDir(idx);
     }
-    if (!flag)
-    {
-        QMessageBox::information(this, "Результаты поиска", "Объект не найден");
-    }
+}
+
+void FinderWidget::resetFindContainer()
+{
+    data->found.clear();
+    data->curIdx = 0;
+}
+
+void FinderWidget::enableResetBtn()
+{
+    data->resetBtn->setEnabled(true);
+}
+
+void FinderWidget::enableFindComps()
+{
+    data->findBtn->setEnabled(true);
+    data->toFindEdit->setEnabled(true);
+}
+
+void FinderWidget::enablePrevNextBtns()
+{
+    data->prevBtn->setEnabled(true);
+    data->nextBtn->setEnabled(true);
+}
+
+void FinderWidget::disableAllCmdComps()
+{
+    data->resetBtn->setEnabled(false);
+    data->findBtn->setEnabled(false);
+    data->nextBtn->setEnabled(false);
+    data->prevBtn->setEnabled(false);
+    data->toFindEdit->setEnabled(false);
+}
+
+void FinderWidget::constructGui()
+{
+    setFixedSize(data->kWidth, data->kHeight);
+
+    auto const layout = new QVBoxLayout(this);
+    layout->setContentsMargins(10, 10, 10, 10);
+
+    data->curDirLabel = new QLabel(this);
+    layout->addWidget(data->curDirLabel);
+
+    data->fsTreeView = new QTreeView(this);
+    data->fsTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    data->fsTreeView->setSelectionMode(QAbstractItemView::SingleSelection);
+    data->fsTreeView->header()->setVisible(false);
+    layout->addWidget(data->fsTreeView);
+
+    auto const horizontal_layout = new QHBoxLayout(this);
+    horizontal_layout->setContentsMargins(0, 0, 0, 0);
+
+    data->toFindEdit = new QLineEdit(this);
+    data->toFindEdit->setPlaceholderText("Enter file or folder name");
+    horizontal_layout->addWidget(data->toFindEdit);
+
+    data->findBtn = new QPushButton("Find", this);
+    horizontal_layout->addWidget(data->findBtn);
+    data->resetBtn = new QPushButton("Reset", this);
+    horizontal_layout->addWidget(data->resetBtn);
+    data->prevBtn = new QPushButton("<", this);
+    horizontal_layout->addWidget(data->prevBtn);
+    data->nextBtn = new QPushButton(">", this);
+    horizontal_layout->addWidget(data->nextBtn);
+
+    layout->addLayout(horizontal_layout);
+    this->setLayout(layout);
+
+    disableAllCmdComps();
+    enableFindComps();
 }

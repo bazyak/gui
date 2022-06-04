@@ -22,6 +22,6 @@ private slots:
     void onExitClicked();
 
 private:
-    std::unique_ptr<Ui::MainWindow> ui_;
-    std::unique_ptr<FinderWidget> finder_;
+    std::unique_ptr<Ui::MainWindow> ui;
+    std::unique_ptr<FinderWidget> finder;
 };

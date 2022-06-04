@@ -9,14 +9,15 @@
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
-    , ui_(std::make_unique<Ui::MainWindow>())
+    , ui(std::make_unique<Ui::MainWindow>())
 {
-    ui_->setupUi(this);
-    finder_ = std::make_unique<FinderWidget>(ui_->centralwidget);
+    ui->setupUi(this);
+    finder = std::make_unique<FinderWidget>(ui->centralwidget);
 
-    setFixedSize(finder_->getWidth(), finder_->getHeight() + 35);
+    setFixedSize(finder->getWidth(), finder->getHeight() + 35);
+    setWindowModality(Qt::NonModal);
 
-    connect(ui_->exit_button, &QPushButton::clicked, this, &MainWindow::onExitClicked);
+    connect(ui->exit_button, &QPushButton::clicked, this, &MainWindow::onExitClicked);
 }
 
 MainWindow::~MainWindow()

@@ -15,11 +15,15 @@ macx: {
 SOURCES += \
     finder_widget.cc \
     main.cc \
-    main_window.cc
+    main_window.cc \
+    seeker.cc \
+    user_event.cc
 
 HEADERS += \
     finder_widget.h \
-    main_window.h
+    main_window.h \
+    seeker.h \
+    user_event.h
 
 FORMS += \
     main_window.ui

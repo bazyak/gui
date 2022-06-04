@@ -17,10 +17,10 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Просмотрщик</string>
+   <string>Finder</string>
   </property>
   <property name="locale">
-   <locale language="Russian" country="Russia"/>
+   <locale language="English" country="UnitedStates"/>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QWidget" name="verticalLayoutWidget">
@@ -36,7 +36,7 @@
      <item>
       <widget class="QPushButton" name="exit_button">
        <property name="text">
-        <string>Закрыть</string>
+        <string>Exit</string>
        </property>
       </widget>
      </item>
