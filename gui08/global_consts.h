@@ -11,6 +11,14 @@ QString inline const HELP_FILE_PREFIX { ":/help_" };
 QString inline const HELP_FILE_SUFFIX { ".txt" };
 }
 
+namespace hotkeys_names
+{
+QString inline const OPEN { "open" };
+QString inline const SAVE { "save" };
+QString inline const _NEW { "new" };
+QString inline const QUIT { "quit" };
+}
+
 namespace hotkeys_values
 {
 QString inline const OPEN { "Ctrl+O" };
@@ -21,11 +29,12 @@ QString inline const QUIT { "Ctrl+Q" };
 
 namespace tr_values
 {
-auto inline WINDOW_TITLE() { return QObject::tr("Урок 07"); }
+auto inline WINDOW_TITLE() { return QObject::tr("Урок 08"); }
 auto inline NEW_BTN() { return QObject::tr("Новый"); }
 auto inline OPEN_BTN() { return QObject::tr("Открыть"); }
 auto inline OPEN_READ_BTN() { return QObject::tr("Открыть на чтение"); }
 auto inline SAVE_BTN() { return QObject::tr("Сохранить"); }
+auto inline SAVE_AS_BTN() { return QObject::tr("Сохранить как"); }
 auto inline PRINT_BTN() { return QObject::tr("Печать"); }
 auto inline SETTINGS_BTN() { return QObject::tr("Настройки"); }
 auto inline HELP_BTN() { return QObject::tr("Справка"); }
@@ -35,6 +44,8 @@ auto inline RIGHT_BTN() { return QObject::tr("П"); }
 auto inline FONT_BTN() { return QObject::tr("Шрифт"); }
 auto inline COPY_FMT_BTN() { return QObject::tr("Скопировать формат"); }
 auto inline APPLY_FMT_BTN() { return QObject::tr("Применить формат"); }
+auto inline DATE_BTN() { return QObject::tr("Дата"); }
+auto inline TIME_BTN() { return QObject::tr("Время"); }
 
 auto inline FILE_MENU() { return QObject::tr("Файл"); }
 auto inline EDIT_MENU() { return QObject::tr("Правка"); }
@@ -71,10 +82,6 @@ auto inline PRINT_DLG_TITLE() { return QObject::tr("Печать"); }
 
 auto inline CLOSE_TAB_TITLE() { return QObject::tr("Сохранить?"); }
 auto inline CLOSE_TAB_TEXT() { return QObject::tr("Сохранить файл перед закрытием?"); }
-
-auto inline FINDER_MENU() { return QObject::tr("Задание 5.3"); }
-auto inline FINDER_ACTION() { return QObject::tr("Просмотрщик"); }
-auto inline FINDER_CLOSE_BTN() { return QObject::tr("Закрыть"); }
 }
 
 namespace conf_param_name

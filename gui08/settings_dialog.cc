@@ -8,24 +8,51 @@
 #include <QString>
 #include <QLineEdit>
 #include <QList>
-#include <QSettings>
 
 #include <memory>
 
 #include "global_consts.h"
-#include "main_window.h"
 #include "little_helpers.h"
+#include "main_window.h"
+#include "key_event_filter.h"
 
 SettingsDialog::SettingsDialog(QWidget* parent)
     : QMainWindow(parent)
-    , ui_(std::make_unique<Ui::SettingsDialog>())
-    , parent_(dynamic_cast<MainWindow*>(parent))
+    , ui(std::make_unique<Ui::SettingsDialog>())
 {
-    ui_->setupUi(this);
+    ui->setupUi(this);
+    ui->open_edit->setAccessibleName(hotkeys_names::OPEN);
+    ui->save_edit->setAccessibleName(hotkeys_names::SAVE);
+    ui->new_edit->setAccessibleName(hotkeys_names::_NEW);
+    ui->quit_edit->setAccessibleName(hotkeys_names::QUIT);
 
-    connect(ui_->exit_button, &QPushButton::clicked, this, &SettingsDialog::onCloseClicked);
-    connect(ui_->english_radio_button, &QRadioButton::toggled, this, &SettingsDialog::onEnglishSelected);
-    connect(ui_->dark_radio_button, &QRadioButton::toggled, this, &SettingsDialog::onDarkSelected);
+    connect(ui->exit_button, &QPushButton::clicked, this, &SettingsDialog::onCloseClicked);
+    connect(ui->english_radio_button, &QRadioButton::toggled, this, [this](auto checked)
+    {
+        emit englishSelected(checked);
+    });
+    connect(ui->dark_radio_button, &QRadioButton::toggled, this, [this](auto checked)
+    {
+        emit darkSelected(checked);
+    });
+    auto const main = dynamic_cast<MainWindow*>(parent);
+    connect(main, &MainWindow::translate, this, &SettingsDialog::onTranslate);
+    connect(main, &MainWindow::changeTheme, this, &SettingsDialog::onChangeTheme);
+    connect(main, &MainWindow::updateLanguageSelector, this,
+            &SettingsDialog::onUpdateLanguageSelector);
+    connect(main, &MainWindow::updateThemeSelector, this, &SettingsDialog::onUpdateThemeSelector);
+    connect(main, &MainWindow::updateLineEditPlaceholderText, this,
+            &SettingsDialog::onUpdateLineEditPlaceholderText);
+
+    evFilter = new KeyEventFilter(this);
+    ui->open_edit->installEventFilter(evFilter);
+    ui->save_edit->installEventFilter(evFilter);
+    ui->new_edit->installEventFilter(evFilter);
+    ui->quit_edit->installEventFilter(evFilter);
+    connect(evFilter, &KeyEventFilter::changeHotKey, this, [this](auto const& name, auto const& seq)
+    {
+        emit changeHotKey(name, seq);
+    });
 }
 
 SettingsDialog::~SettingsDialog()
@@ -37,38 +64,24 @@ void SettingsDialog::onCloseClicked()
     close();
 }
 
-void SettingsDialog::onEnglishSelected(bool checked)
+void SettingsDialog::onTranslate()
 {
-    auto const lang = checked ? lang_values::EN : lang_values::RU;
-    parent_->switchLanguage(lang);
-    parent_->getSettings()->setValue(conf_param_name::LANG, lang);
-}
-
-void SettingsDialog::onDarkSelected(bool checked)
-{
-    auto const theme = checked ? theme_values::DARK : theme_values::LIGHT;
-    parent_->switchTheme(theme);
-    parent_->getSettings()->setValue(conf_param_name::THEME, theme);
-}
-
-void SettingsDialog::updateTranslatable()
-{
-    ui_->exit_button->setText(tr_values::SETTINGS_EXIT_BUTTON());
+    ui->exit_button->setText(tr_values::SETTINGS_EXIT_BUTTON());
     this->setWindowTitle(tr_values::SETTINGS_WINDOW_TITLE());
 
-    ui_->hotkeys_group->setTitle(tr_values::SETTINGS_HOTKEYS_GROUP());
-    ui_->lang_group->setTitle(tr_values::SETTINGS_LANG_GROUP());
-    ui_->theme_group->setTitle(tr_values::SETTINGS_THEME_GROUP());
-    ui_->light_radio_button->setText(tr_values::SETTINGS_LIGHT_RADIO());
-    ui_->dark_radio_button->setText(tr_values::SETTINGS_DARK_RADIO());
+    ui->hotkeys_group->setTitle(tr_values::SETTINGS_HOTKEYS_GROUP());
+    ui->lang_group->setTitle(tr_values::SETTINGS_LANG_GROUP());
+    ui->theme_group->setTitle(tr_values::SETTINGS_THEME_GROUP());
+    ui->light_radio_button->setText(tr_values::SETTINGS_LIGHT_RADIO());
+    ui->dark_radio_button->setText(tr_values::SETTINGS_DARK_RADIO());
 
-    ui_->label_open->setText(tr_values::SETTINGS_OPEN_LABEL());
-    ui_->label_save->setText(tr_values::SETTINGS_SAVE_LABEL());
-    ui_->label_new->setText(tr_values::SETTINGS_NEW_LABEL());
-    ui_->label_quit->setText(tr_values::SETTINGS_QUIT_LABEL());
+    ui->label_open->setText(tr_values::SETTINGS_OPEN_LABEL());
+    ui->label_save->setText(tr_values::SETTINGS_SAVE_LABEL());
+    ui->label_new->setText(tr_values::SETTINGS_NEW_LABEL());
+    ui->label_quit->setText(tr_values::SETTINGS_QUIT_LABEL());
 }
 
-void SettingsDialog::switchTheme(QString const& theme)
+void SettingsDialog::onChangeTheme(QString const& theme)
 {
     auto lst = this->findChildren<QWidget*>();
     lst.push_back(this);
@@ -76,44 +89,24 @@ void SettingsDialog::switchTheme(QString const& theme)
     processStyleInList(lst, theme);
 }
 
-bool SettingsDialog::getLanguage() const
+void SettingsDialog::onUpdateLanguageSelector(QString const& language)
 {
-    return ui_->english_radio_button->isChecked();
+    ui->english_radio_button->setChecked(language == lang_values::EN);
 }
 
-QString SettingsDialog::getTheme() const
+void SettingsDialog::onUpdateThemeSelector(QString const& theme)
 {
-    return ui_->dark_radio_button->isChecked()
-            ? theme_values::DARK
-            : theme_values::LIGHT;
+    ui->dark_radio_button->setChecked(theme == theme_values::DARK);
 }
 
-void SettingsDialog::setLanguageRadioButton(QString const& language)
+void SettingsDialog::onUpdateLineEditPlaceholderText(QString const& name, QString const& text)
 {
-    ui_->english_radio_button->setChecked(language == lang_values::EN);
-}
-
-void SettingsDialog::setThemeRadioButton(const QString &theme)
-{
-    ui_->dark_radio_button->setChecked(theme == theme_values::DARK);
-}
-
-QLineEdit* SettingsDialog::getOpenEdit()
-{
-    return ui_->open_edit;
-}
-
-QLineEdit* SettingsDialog::getSaveEdit()
-{
-    return ui_->save_edit;
-}
-
-QLineEdit* SettingsDialog::getNewEdit()
-{
-    return ui_->new_edit;
-}
-
-QLineEdit* SettingsDialog::getQuitEdit()
-{
-    return ui_->quit_edit;
+    auto const edits = this->findChildren<QLineEdit*>();
+    for (auto edit : edits)
+    {
+        if (edit->accessibleName() == name)
+        {
+            edit->setPlaceholderText(text);
+        }
+    }
 }

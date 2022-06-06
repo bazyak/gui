@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <QMainWindow>
 #include <QTranslator>
@@ -7,31 +7,20 @@
 #include <QTextCharFormat>
 
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
-#include "key_event_filter.h"
-#include "custom_plain_text_edit.h"
+#include "custom_text_edit.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
 class QSettings;
-class FinderDialog;
 class SettingsDialog;
 class QWidget;
-
-struct DocProps
-{
-    QString file_path { };
-    bool is_read_only { false };
-};
-
-struct CharFmt
-{
-    QTextCharFormat fmt { };
-    Qt::Alignment align { };
-};
+class QShortcut;
+class QKeySequence;
 
 class MainWindow : public QMainWindow
 {
@@ -40,20 +29,24 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
-    void switchLanguage(QString const& lang);
-    void switchTheme(QString const& theme);
-    QSettings* getSettings();
+
+signals:
+    void translate();
+    void changeTheme(QString const& theme);
+    void updateLanguageSelector(QString const& language);
+    void updateThemeSelector(QString const& theme);
+    void updateLineEditPlaceholderText(QString const& name, QString const& text);
 
 private slots:
     void onOpenClicked();
     void onOpenReadClicked();
     void onSaveClicked();
+    void onSaveAsClicked();
     void onNewClicked();
     void onHelpClicked();
     void onQuitClicked();
     void onPrintClicked();
     void onSettingsClicked();
-    void onFinderMenuClicked();
     void tabSelected(int index);
     void onLeftClicked();
     void onCenterClicked();
@@ -61,28 +54,54 @@ private slots:
     void onFontClicked();
     void onCopyFormatClicked();
     void onApplyFormatClicked();
+    void onDateClicked();
+    void onTimeClicked();
+    void onTextChanged();
+
+    // for settings dialog
+    void onEnglishSelected(bool checked);
+    void onDarkSelected(bool checked);
+    void onChangeHotKey(QString const& objName, QKeySequence const& keySeq);
 
 private:
-    void loadFile(CustomPlainTextEdit* tab);
-    void updateBasedOnReadOnlyState();
-    void closeTab(int index);
+    using HotkeysMap = std::unordered_map<QString, QShortcut*>;
+
+    struct DocProps
+    {
+        QString filePath { };
+        bool isReadOnly { false };
+        bool isSaved { true };
+    };
+    struct CharFmt
+    {
+        QTextCharFormat fmt { };
+        Qt::Alignment align { };
+    };
+
+    void switchLanguage(QString const& lang);
+    void switchTheme(QString const& theme);
+    bool loadFile(CustomTextEdit* tab);
+    void saveFile(CustomTextEdit* tab, bool saveAs = true);
+    void updateBasedOnReadOnlyState(bool onlyCurrent = true);
+    void closeTab(int index, bool withoutSave = false);
     void initShortcuts();
     void initTabs();
     void connectButtons();
     void connectActions();
-    void initEventFilter();
+    void prepareSettingsDialog();
 
-    QTranslator translator_ { };
-    QString dir_ { };
-    KeyEventFilter::HotkeysMap hot_keys_ { };
-    std::vector<DocProps> docs_ { };
-    int current_tab_ = 0;
-    CharFmt fmt_ { };
+    QString dir { };
+    QString lang { };
+    QString theme { };
 
-    std::unique_ptr<Ui::MainWindow> ui_;
-    std::unique_ptr<QSettings> settings_;
-    std::unique_ptr<FinderDialog> finder_dialog_;
-    std::unique_ptr<SettingsDialog> settings_dialog_;
-    std::shared_ptr<KeyEventFilter> ev_filter_;
-    std::unique_ptr<QTabWidget> tabs_;
+    QTranslator translator { };
+    HotkeysMap hotKeys { };
+    std::vector<DocProps> docs { };
+    CharFmt fmt { };
+    int curTabIdx = -1;
+
+    std::unique_ptr<Ui::MainWindow> ui;
+    QSettings* settings { nullptr };
+    SettingsDialog* settingsDialog { nullptr };
+    QTabWidget* tabs { nullptr };
 };

@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>789</width>
+    <width>919</width>
     <height>426</height>
    </rect>
   </property>
@@ -20,7 +20,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>Урок 07</string>
+   <string>Урок 08</string>
   </property>
   <property name="locale">
    <locale language="Russian" country="Russia"/>
@@ -32,7 +32,7 @@
    <widget class="QWidget" name="verticalLayoutWidget_3">
     <property name="geometry">
      <rect>
-      <x>620</x>
+      <x>750</x>
       <y>80</y>
       <width>151</width>
       <height>311</height>
@@ -73,6 +73,13 @@
        </property>
        <property name="text">
         <string>Сохранить</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="save_as_button">
+       <property name="text">
+        <string>Сохранить как</string>
        </property>
       </widget>
      </item>
@@ -123,7 +130,7 @@
      <rect>
       <x>20</x>
       <y>50</y>
-      <width>581</width>
+      <width>711</width>
       <height>351</height>
      </rect>
     </property>
@@ -134,7 +141,7 @@
      <rect>
       <x>20</x>
       <y>10</y>
-      <width>581</width>
+      <width>711</width>
       <height>32</height>
      </rect>
     </property>
@@ -253,6 +260,56 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QPushButton" name="date_button">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>60</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="sizeIncrement">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="baseSize">
+        <size>
+         <width>120</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Дата</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="time_button">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>60</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Время</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </widget>
   </widget>
@@ -264,19 +321,10 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>789</width>
+     <width>919</width>
      <height>24</height>
     </rect>
    </property>
-   <widget class="QMenu" name="task_5_3_menu">
-    <property name="locale">
-     <locale language="Russian" country="Russia"/>
-    </property>
-    <property name="title">
-     <string>Задание 5.3</string>
-    </property>
-    <addaction name="finder_action"/>
-   </widget>
    <widget class="QMenu" name="file_menu">
     <property name="title">
      <string>Файл</string>
@@ -299,7 +347,6 @@
    </widget>
    <addaction name="file_menu"/>
    <addaction name="edit_menu"/>
-   <addaction name="task_5_3_menu"/>
   </widget>
   <action name="finder_action">
    <property name="text">

@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget* parent)
     , ui(std::make_unique<Ui::MainWindow>())
 {
     ui->setupUi(this);
-    finder = std::make_unique<FinderWidget>(ui->centralwidget);
+    finder = new FinderWidget(ui->centralwidget);
 
     setFixedSize(finder->getWidth(), finder->getHeight() + 35);
     setWindowModality(Qt::NonModal);

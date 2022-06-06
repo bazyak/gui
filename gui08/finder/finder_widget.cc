@@ -36,6 +36,7 @@ public:
     QPushButton* nextBtn { nullptr };
     QPushButton* prevBtn { nullptr };
     QLabel* curDirLabel { nullptr };
+    std::unique_ptr<QHBoxLayout> horizontal_layout;
 
     int curIdx = 0;
     QStringList found { };
@@ -101,8 +102,7 @@ void FinderWidget::findFileSystemObject()
 
     if (!data->curDirLabel->text().length())
     {
-        QMessageBox::warning(this, "Nowhere to find",
-                             "Please select search directory");
+        QMessageBox::warning(this, "Nowhere to find", "Please select search directory");
         return;
     }
     resetFindContainer();
@@ -141,8 +141,7 @@ void FinderWidget::onSearchFinished(bool stopped)
     }
     if (data->found.isEmpty())
     {
-        QMessageBox::warning(this, "Searching results",
-                             "Search completed. Object not found");
+        QMessageBox::warning(this, "Searching results", "Search completed. Object not found");
         return;
     }
     QMessageBox::information(this, "Searching results",
@@ -227,23 +226,23 @@ void FinderWidget::constructGui()
     data->fsTreeView->header()->setVisible(false);
     layout->addWidget(data->fsTreeView);
 
-    auto const horizontal_layout = new QHBoxLayout(this);
-    horizontal_layout->setContentsMargins(0, 0, 0, 0);
+    data->horizontal_layout = std::make_unique<QHBoxLayout>();
+    data->horizontal_layout->setContentsMargins(0, 0, 0, 0);
 
     data->toFindEdit = new QLineEdit(this);
     data->toFindEdit->setPlaceholderText("Enter file or folder name");
-    horizontal_layout->addWidget(data->toFindEdit);
+    data->horizontal_layout->addWidget(data->toFindEdit);
 
     data->findBtn = new QPushButton("Find", this);
-    horizontal_layout->addWidget(data->findBtn);
+    data->horizontal_layout->addWidget(data->findBtn);
     data->resetBtn = new QPushButton("Reset", this);
-    horizontal_layout->addWidget(data->resetBtn);
+    data->horizontal_layout->addWidget(data->resetBtn);
     data->prevBtn = new QPushButton("<", this);
-    horizontal_layout->addWidget(data->prevBtn);
+    data->horizontal_layout->addWidget(data->prevBtn);
     data->nextBtn = new QPushButton(">", this);
-    horizontal_layout->addWidget(data->nextBtn);
+    data->horizontal_layout->addWidget(data->nextBtn);
 
-    layout->addLayout(horizontal_layout);
+    layout->addLayout(data->horizontal_layout.get());
     this->setLayout(layout);
 
     disableAllCmdComps();

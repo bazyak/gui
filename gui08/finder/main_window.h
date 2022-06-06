@@ -23,5 +23,5 @@ private slots:
 
 private:
     std::unique_ptr<Ui::MainWindow> ui;
-    std::unique_ptr<FinderWidget> finder;
+    FinderWidget* finder;
 };

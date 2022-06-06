@@ -28,17 +28,15 @@ void Seeker::run()
     if (!toFind.length() || !root.length()) return;
 
     isWork = true;
-    QDirIterator it(root, QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+    QDirIterator it(root, QStringList() << toFind,
+                    QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot,
+                    QDirIterator::Subdirectories);
     while (isWork && it.hasNext())
     {
         auto const path = it.next();
-        auto const name = QFileInfo(path).fileName();
-        if (name == toFind)
-        {
-            auto event = new UserEvent();
-            event->setMsg(path);
-            QCoreApplication::postEvent(parent(), event);
-        }
+        auto const event = new UserEvent();
+        event->setMsg(path);
+        QCoreApplication::postEvent(parent(), event);
     }
     emit resultReady(!isWork);
 }

@@ -1,52 +1,43 @@
 #include "key_event_filter.h"
 
-#include <QDebug>
 #include <QEvent>
 #include <QObject>
 #include <QLineEdit>
 #include <QKeyEvent>
 #include <QKeySequence>
 #include <QKeyCombination>
-#include <QShortcut>
-#include <QSettings>
 
-#include "main_window.h"
-
-KeyEventFilter::KeyEventFilter(HotkeysMap& m, QObject* parent)
-    : QObject(parent)
-    , map_(m)
-    , parent_(dynamic_cast<MainWindow*>(parent))
+KeyEventFilter::KeyEventFilter(QObject* parent) : QObject(parent)
 {
 }
 
 bool KeyEventFilter::eventFilter(QObject* obj, QEvent* event)
 {
-    auto widget = dynamic_cast<QLineEdit*>(obj);
+    auto const widget = dynamic_cast<QLineEdit*>(obj);
     if (widget == nullptr)
         return false;
 
     if (widget->hasFocus() && event->type() == QEvent::KeyPress)
     {
-        auto true_event = dynamic_cast<QKeyEvent*>(event);
+        auto const trueEvent = dynamic_cast<QKeyEvent*>(event);
 
-        auto const key = true_event->key();
-        auto const modifiers = true_event->modifiers();
-        auto const hot_key = QKeyCombination(modifiers, Qt::Key(key));
+        auto const key = trueEvent->key();
+        auto const modifiers = trueEvent->modifiers();
+        auto const hotKey = QKeyCombination(modifiers, Qt::Key(key));
 
         // setup new hotkey
-        map_[widget->objectName()]->setKey(QKeySequence(hot_key));
-        parent_->getSettings()->setValue(widget->objectName(), QKeySequence(hot_key).toString());
+        emit changeHotKey(widget->accessibleName(), QKeySequence(hotKey));
 
         // pretty print hotkey
-        auto const kk = QKeyCombination(Qt::Key(key));
-        auto const s_key = QKeySequence(kk).toString(QKeySequence::NativeText);
-        auto s_hot_key = QKeySequence(hot_key).toString(QKeySequence::NativeText);
-        if (s_hot_key.count(s_key) > 1)
+        auto const comb = QKeyCombination(Qt::Key(key));
+        auto const strKey = QKeySequence(comb).toString(QKeySequence::NativeText);
+        auto strHotKey = QKeySequence(hotKey).toString(QKeySequence::NativeText);
+        if (strHotKey.count(strKey) > 1)
         {
-            auto const pos = s_hot_key.lastIndexOf(s_key);
-            s_hot_key.remove(pos, s_key.length());
+            auto const pos = strHotKey.lastIndexOf(strKey);
+            strHotKey.remove(pos, strKey.length());
         }
-        widget->setText(s_hot_key);
+        widget->setText(strHotKey);
 
         return true;
     }

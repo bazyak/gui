@@ -1,19 +1,17 @@
 #pragma once
 
-#include <QPlainTextEdit>
-#include <QMenu>
-
-#include <memory>
+#include <QTextEdit>
 
 class QContextMenuEvent;
 class QWidget;
+class QMenu;
 
-class CustomPlainTextEdit : public QTextEdit
+class CustomTextEdit : public QTextEdit
 {
     Q_OBJECT
 
 public:
-    explicit CustomPlainTextEdit(QWidget* parent = nullptr);
+    explicit CustomTextEdit(QWidget* parent = nullptr);
 
 protected:
     void contextMenuEvent(QContextMenuEvent* event) override;
@@ -24,5 +22,5 @@ public slots:
     void pasteText();
 
 private:
-    std::unique_ptr<QMenu> menu_;
+    QMenu* menu { nullptr };
 };

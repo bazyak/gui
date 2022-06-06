@@ -6,9 +6,10 @@
 
 namespace Ui { class SettingsDialog; }
 
-class MainWindow;
 class QString;
 class QLineEdit;
+class KeyEventFilter;
+class QKeySequence;
 
 class SettingsDialog : public QMainWindow
 {
@@ -17,23 +18,21 @@ class SettingsDialog : public QMainWindow
 public:
     explicit SettingsDialog(QWidget* parent = nullptr);
     ~SettingsDialog();
-    void updateTranslatable();
-    void switchTheme(QString const& theme);
-    bool getLanguage() const;
-    QString getTheme() const;
-    void setLanguageRadioButton(QString const& language);
-    void setThemeRadioButton(QString const& theme);
-    QLineEdit* getOpenEdit();
-    QLineEdit* getSaveEdit();
-    QLineEdit* getNewEdit();
-    QLineEdit* getQuitEdit();
+
+signals:
+    void englishSelected(bool checked);
+    void darkSelected(bool checked);
+    void changeHotKey(QString const& objName, QKeySequence const& keySeq);
 
 private slots:
     void onCloseClicked();
-    void onEnglishSelected(bool checked);
-    void onDarkSelected(bool checked);
+    void onTranslate();
+    void onChangeTheme(QString const& theme);
+    void onUpdateLanguageSelector(QString const& language);
+    void onUpdateThemeSelector(QString const& theme);
+    void onUpdateLineEditPlaceholderText(QString const& name, QString const& text);
 
 private:
-    std::unique_ptr<Ui::SettingsDialog> ui_;
-    MainWindow* parent_ { nullptr };
+    std::unique_ptr<Ui::SettingsDialog> ui;
+    KeyEventFilter* evFilter { nullptr };
 };

@@ -24,47 +24,30 @@
 #include <QFont>
 #include <QFontDialog>
 #include <QLineEdit>
+#include <QDate>
+#include <QTime>
 
 #include <memory>
 
-#include "key_event_filter.h"
 #include "global_consts.h"
-#include "finder_dialog.h"
 #include "little_helpers.h"
-#include "custom_plain_text_edit.h"
+#include "custom_text_edit.h"
 #include "settings_dialog.h"
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
-    , ui_(std::make_unique<Ui::MainWindow>())
-    , settings_(std::make_unique<QSettings>(glob_values::CONF_FILE_NAME, QSettings::IniFormat))
-    , finder_dialog_(std::make_unique<FinderDialog>(this))
-    , settings_dialog_(std::make_unique<SettingsDialog>(this))
+    , ui(std::make_unique<Ui::MainWindow>())
+    , settings(new QSettings(glob_values::CONF_FILE_NAME, QSettings::IniFormat, this))
+    , settingsDialog(new SettingsDialog(this))
 {
-    ui_->setupUi(this);
+    ui->setupUi(this);
     Q_INIT_RESOURCE(res);
     setFixedSize(width(), height());
-
-    dir_ = settings_->contains(conf_param_name::DIR)
-            ? settings_->value(conf_param_name::DIR, "").toString()
-            : QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
 
     initTabs();
     connectButtons();
     initShortcuts();
-    initEventFilter();
-
-    auto const lang = settings_->contains(conf_param_name::LANG)
-            ? settings_->value(conf_param_name::LANG, "").toString()
-            : lang_values::RU;
-    switchLanguage(lang);
-    settings_dialog_->setLanguageRadioButton(lang);
-
-    auto const theme = settings_->contains(conf_param_name::THEME)
-            ? settings_->value(conf_param_name::THEME, "").toString()
-            : theme_values::LIGHT;
-    switchTheme(theme);
-    settings_dialog_->setThemeRadioButton(theme);
+    prepareSettingsDialog();
 }
 
 MainWindow::~MainWindow()
@@ -73,88 +56,69 @@ MainWindow::~MainWindow()
 
 void MainWindow::onOpenClicked()
 {
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    onNewClicked();
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
     if (!tab) return;
 
-    auto const idx = tabs_->currentIndex();
-    if (checkIndex(idx, docs_))
+    if (checkIndex(curTabIdx, docs))
     {
-        docs_[idx].is_read_only = false;
+        docs[curTabIdx].isReadOnly = false;
     }
-    loadFile(tab);
+    if (!loadFile(tab))
+    {
+        closeTab(curTabIdx, true);
+    }
     updateBasedOnReadOnlyState();
 }
 
 void MainWindow::onOpenReadClicked()
 {
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    onNewClicked();
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
     if (!tab) return;
 
-    auto const idx = tabs_->currentIndex();
-    if (checkIndex(idx, docs_))
+    if (checkIndex(curTabIdx, docs))
     {
-        docs_[idx].is_read_only = true;
+        docs[curTabIdx].isReadOnly = true;
     }
-    loadFile(tab);
+    if (!loadFile(tab))
+    {
+        closeTab(curTabIdx, true);
+    }
     updateBasedOnReadOnlyState();
 }
 
 void MainWindow::onSaveClicked()
 {
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
     if (!tab) return;
 
-    auto const f_path = QFileDialog::getSaveFileName(this,
-        tr_values::SAVE_DLG_TITLE(),
-        dir_, tr_values::SAVE_DLG_FILE_TYPES());
-    if (f_path.length() > 0)
-    {
-        if (docs_[tabs_->currentIndex()].is_read_only &&
-            docs_[tabs_->currentIndex()].file_path == f_path)
-        {
-            QMessageBox::warning(nullptr, tr_values::SAVE_DLG_ERR_TITLE(),
-                                 tr_values::SAVE_DLG_ERR_TEXT());
-            return;
-        }
-        QFile file(f_path);
-        if (file.open(QFile::WriteOnly))
-        {
-            QTextStream stream(&file);
-            stream << tab->toHtml();
+    saveFile(tab, checkIndex(curTabIdx, docs) && docs[curTabIdx].filePath.isEmpty());
+}
 
-            dir_ = QFileInfo(f_path).absolutePath();
-            settings_->setValue(conf_param_name::DIR, dir_);
+void MainWindow::onSaveAsClicked()
+{
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
+    if (!tab) return;
 
-            auto const idx = tabs_->currentIndex();
-            if (checkIndex(idx, docs_))
-            {
-                docs_[idx].file_path = f_path;
-                docs_[idx].is_read_only = false;
-            }
-        }
-    }
-    updateBasedOnReadOnlyState();
+    saveFile(tab);
 }
 
 void MainWindow::onNewClicked()
 {
-    auto const tab = new CustomPlainTextEdit(tabs_.get());
-    auto const idx = tabs_->addTab(tab, tr_values::TAB_DEF_TITLE());
-    docs_.push_back({ });
-    tabs_->setCurrentIndex(idx);
+    auto const tab = new CustomTextEdit(tabs);
+    auto const idx = tabs->addTab(tab, tr_values::TAB_DEF_TITLE());
+    docs.push_back({ });
+    tabs->setCurrentIndex(idx);
 
     QList<QWidget*> lst { tab };
 
-    processStyleInList(lst, settings_dialog_->getTheme());
+    processStyleInList(lst, theme);
 }
 
 void MainWindow::onHelpClicked()
 {
-    auto const lang = settings_dialog_->getLanguage();
-
-    QFile file(glob_values::HELP_FILE_PREFIX
-               + QString(lang ? lang_values::EN : lang_values::RU)
-               + glob_values::HELP_FILE_SUFFIX);
+    QFile file(glob_values::HELP_FILE_PREFIX + lang + glob_values::HELP_FILE_SUFFIX);
     if (file.open(QIODevice::ReadOnly))
     {
         QTextStream stream(&file);
@@ -170,7 +134,7 @@ void MainWindow::onQuitClicked()
 
 void MainWindow::onPrintClicked()
 {
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
     if (!tab) return;
 
     QPrinter printer;
@@ -184,36 +148,32 @@ void MainWindow::onPrintClicked()
 
 void MainWindow::onSettingsClicked()
 {
-    settings_dialog_->show();
-}
-
-void MainWindow::onFinderMenuClicked()
-{
-    finder_dialog_->exec();
+    settingsDialog->show();
 }
 
 void MainWindow::tabSelected(int index)
 {
-    if (index != current_tab_)
+    if (index != curTabIdx)
     {
-        disconnect(ui_->copy_action, &QAction::triggered, 0, 0);
-        disconnect(ui_->cut_action, &QAction::triggered, 0, 0);
-        disconnect(ui_->paste_action, &QAction::triggered, 0, 0);
+        disconnect(ui->copy_action, &QAction::triggered, 0, 0);
+        disconnect(ui->cut_action, &QAction::triggered, 0, 0);
+        disconnect(ui->paste_action, &QAction::triggered, 0, 0);
 
         if (index != -1)
         {
-            auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
-            connect(ui_->copy_action, &QAction::triggered, tab, &CustomPlainTextEdit::copyText);
-            connect(ui_->cut_action, &QAction::triggered, tab, &CustomPlainTextEdit::cutText);
-            connect(ui_->paste_action, &QAction::triggered, tab, &CustomPlainTextEdit::pasteText);
+            auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
+            connect(ui->copy_action, &QAction::triggered, tab, &CustomTextEdit::copyText);
+            connect(ui->cut_action, &QAction::triggered, tab, &CustomTextEdit::cutText);
+            connect(ui->paste_action, &QAction::triggered, tab, &CustomTextEdit::pasteText);
+            connect(tab, &CustomTextEdit::textChanged, this, &MainWindow::onTextChanged);
         }
-        current_tab_ = index;
+        curTabIdx = index;
     }
 }
 
 void MainWindow::onLeftClicked()
 {
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
     if (!tab) return;
 
     tab->setAlignment(Qt::AlignLeft);
@@ -221,7 +181,7 @@ void MainWindow::onLeftClicked()
 
 void MainWindow::onCenterClicked()
 {
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
     if (!tab) return;
 
     tab->setAlignment(Qt::AlignCenter);
@@ -229,7 +189,7 @@ void MainWindow::onCenterClicked()
 
 void MainWindow::onRightClicked()
 {
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
     if (!tab) return;
 
     tab->setAlignment(Qt::AlignRight);
@@ -237,7 +197,7 @@ void MainWindow::onRightClicked()
 
 void MainWindow::onFontClicked()
 {
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
     if (!tab) return;
 
     QFont font = tab->textCursor().charFormat().font();
@@ -260,248 +220,350 @@ void MainWindow::onFontClicked()
 
 void MainWindow::onCopyFormatClicked()
 {
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
     if (!tab) return;
 
     if (tab->textCursor().hasSelection())
     {
-        fmt_.fmt = tab->textCursor().charFormat();
-        fmt_.align = tab->alignment();
+        fmt.fmt = tab->textCursor().charFormat();
+        fmt.align = tab->alignment();
     }
 }
 
 void MainWindow::onApplyFormatClicked()
 {
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
     if (!tab) return;
 
     if (!tab->textCursor().hasSelection())
     {
-        tab->setCurrentCharFormat(fmt_.fmt);
+        tab->setCurrentCharFormat(fmt.fmt);
     }
     else
     {
-        tab->textCursor().setCharFormat(fmt_.fmt);
+        tab->textCursor().setCharFormat(fmt.fmt);
     }
-    tab->setAlignment(fmt_.align);
+    tab->setAlignment(fmt.align);
 }
 
-void MainWindow::loadFile(CustomPlainTextEdit* tab)
+void MainWindow::onDateClicked()
 {
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
     if (!tab) return;
 
-    auto const f_path = QFileDialog::getOpenFileName(this,
-        tr_values::OPEN_DLG_TITLE(),
-        dir_, tr_values::OPEN_DLG_FILE_TYPES());
-    if (f_path.length() > 0)
+    auto const date { QDate::currentDate() };
+    tab->textCursor().insertText(date.toString(" dd MMMM yyyy "));
+}
+
+void MainWindow::onTimeClicked()
+{
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
+    if (!tab) return;
+
+    auto const time { QTime::currentTime() };
+    tab->textCursor().insertText(time.toString(" hh:mm:ss "));
+}
+
+void MainWindow::onTextChanged()
+{
+    if (checkIndex(curTabIdx, docs) && docs[curTabIdx].isSaved)
     {
-        QFile file(f_path);
+        auto const title = tabs->tabText(curTabIdx);
+        tabs->setTabText(curTabIdx, "*" + title);
+        docs[curTabIdx].isSaved = false;
+    }
+}
+
+void MainWindow::onEnglishSelected(bool checked)
+{
+    lang = checked ? lang_values::EN : lang_values::RU;
+    switchLanguage(lang);
+    settings->setValue(conf_param_name::LANG, lang);
+}
+
+void MainWindow::onDarkSelected(bool checked)
+{
+    theme = checked ? theme_values::DARK : theme_values::LIGHT;
+    switchTheme(theme);
+    settings->setValue(conf_param_name::THEME, theme);
+}
+
+void MainWindow::onChangeHotKey(QString const& objName, QKeySequence const& keySeq)
+{
+    hotKeys[objName]->setKey(keySeq);
+    settings->setValue(objName, keySeq.toString());
+}
+
+void MainWindow::switchLanguage(QString const& lang)
+{
+    if (translator.load(glob_values::TR_FILE_PREFIX + lang))
+    {
+        qApp->installTranslator(&translator);
+    }
+    this->setWindowTitle(tr_values::WINDOW_TITLE());
+
+    ui->new_button->setText(tr_values::NEW_BTN());
+    ui->open_button->setText(tr_values::OPEN_BTN());
+    ui->open_read_button->setText(tr_values::OPEN_READ_BTN());
+    ui->save_button->setText(tr_values::SAVE_BTN());
+    ui->save_as_button->setText(tr_values::SAVE_AS_BTN());
+    ui->print_button->setText(tr_values::PRINT_BTN());
+    ui->settings_button->setText(tr_values::SETTINGS_BTN());
+    ui->help_button->setText(tr_values::HELP_BTN());
+
+    ui->file_menu->setTitle(tr_values::FILE_MENU());
+    ui->edit_menu->setTitle(tr_values::EDIT_MENU());
+    ui->open_action->setText(tr_values::OPEN_BTN());
+    ui->open_rd_action->setText(tr_values::OPEN_READ_BTN());
+    ui->save_action->setText(tr_values::SAVE_BTN());
+    ui->print_action->setText(tr_values::PRINT_BTN());
+    ui->help_action->setText(tr_values::HELP_BTN());
+    ui->copy_action->setText(tr_values::COPY_ACTION());
+    ui->cut_action->setText(tr_values::CUT_ACTION());
+    ui->paste_action->setText(tr_values::PASTE_ACTION());
+
+    ui->left_button->setText(tr_values::LEFT_BTN());
+    ui->center_button->setText(tr_values::CENTER_BTN());
+    ui->right_button->setText(tr_values::RIGHT_BTN());
+    ui->font_button->setText(tr_values::FONT_BTN());
+    ui->copy_format_button->setText(tr_values::COPY_FMT_BTN());
+    ui->apply_format_button->setText(tr_values::APPLY_FMT_BTN());
+    ui->date_button->setText(tr_values::DATE_BTN());
+    ui->time_button->setText(tr_values::TIME_BTN());
+
+    updateBasedOnReadOnlyState(false);
+    emit translate();
+}
+
+void MainWindow::switchTheme(QString const& theme)
+{
+    auto lst = ui->centralwidget->findChildren<QWidget*>();
+    lst.push_back(ui->centralwidget);
+
+    processStyleInList(lst, theme);
+
+    emit changeTheme(theme);
+}
+
+bool MainWindow::loadFile(CustomTextEdit* tab)
+{
+    if (!tab) return false;
+
+    auto const fPath = QFileDialog::getOpenFileName(this,
+                                                    tr_values::OPEN_DLG_TITLE(),
+                                                    dir,
+                                                    tr_values::OPEN_DLG_FILE_TYPES());
+    if (fPath.length() > 0)
+    {
+        QFile file(fPath);
         if (file.open(QFile::ReadOnly | QFile::ExistingOnly))
         {
             QTextStream stream(&file);
             tab->setHtml(stream.readAll());
 
-            dir_ = QFileInfo(f_path).absolutePath();
-            settings_->setValue(conf_param_name::DIR, dir_);
+            dir = QFileInfo(fPath).absolutePath();
+            settings->setValue(conf_param_name::DIR, dir);
 
-            auto const idx = tabs_->currentIndex();
-            if (checkIndex(idx, docs_))
+            if (checkIndex(curTabIdx, docs))
             {
-                docs_[idx].file_path = f_path;
+                docs[curTabIdx].filePath = fPath;
+                docs[curTabIdx].isSaved = true;
             }
+            return true;
+        }
+    }
+    return false;
+}
+
+void MainWindow::saveFile(CustomTextEdit* tab, bool saveAs)
+{
+    if (!tab) return;
+
+    if (!checkIndex(curTabIdx, docs)) return;
+
+    QString fPath { docs[curTabIdx].filePath };
+    if (saveAs)
+    {
+        fPath = QFileDialog::getSaveFileName(this, tr_values::SAVE_DLG_TITLE(),
+                                             dir, tr_values::SAVE_DLG_FILE_TYPES());
+    }
+    if (fPath.length() > 0)
+    {
+        if (docs[curTabIdx].isReadOnly &&
+            docs[curTabIdx].filePath == fPath)
+        {
+            QMessageBox::warning(nullptr, tr_values::SAVE_DLG_ERR_TITLE(),
+                                 tr_values::SAVE_DLG_ERR_TEXT());
+            return;
+        }
+        QFile file(fPath);
+        if (file.open(QFile::WriteOnly))
+        {
+            QTextStream stream(&file);
+            stream << tab->toHtml();
+
+            dir = QFileInfo(fPath).absolutePath();
+            settings->setValue(conf_param_name::DIR, dir);
+
+            docs[curTabIdx].filePath = fPath;
+            docs[curTabIdx].isReadOnly = false;
+            docs[curTabIdx].isSaved = true;
+        }
+    }
+    updateBasedOnReadOnlyState();
+}
+
+void MainWindow::updateBasedOnReadOnlyState(bool onlyCurrent)
+{
+    auto const readOnlySfx = tr_values::TAB_READ_ONLY_SUFFIX();
+    QString title { };
+    auto const start = onlyCurrent ? curTabIdx : 0;
+    auto const end = onlyCurrent ? start + 1 : tabs->count();
+    for (auto idx = start; idx < end; ++idx)
+    {
+        if (checkIndex(idx, docs))
+        {
+            auto const fPath = docs[idx].filePath;
+            title = fPath.isEmpty() ? tr_values::TAB_DEF_TITLE()
+                                    : QFileInfo(fPath).fileName()
+                                      + (docs[idx].isReadOnly ? " " + readOnlySfx : " ");
+            title = (docs[idx].isSaved ? "" : "*") + title;
+            tabs->setTabText(idx, title);
+            dynamic_cast<CustomTextEdit*>(tabs->currentWidget())->setReadOnly(docs[idx].isReadOnly);
         }
     }
 }
 
-void MainWindow::updateBasedOnReadOnlyState()
+void MainWindow::closeTab(int index, bool withoutSave)
 {
-    auto const read_only_sfx = tr_values::TAB_READ_ONLY_SUFFIX();
-    QString title { };
-    auto const idx = tabs_->currentIndex();
-    if (checkIndex(idx, docs_))
+    if (checkIndex(index, docs))
     {
-        auto const f_path = docs_[idx].file_path;
-        title = f_path.isEmpty() ? tr_values::TAB_DEF_TITLE()
-                                 : QFileInfo(f_path).fileName()
-                                   + (docs_[idx].is_read_only ? " " + read_only_sfx : " ");
-        tabs_->setTabText(idx, title);
-        dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget())->setReadOnly(docs_[idx].is_read_only);
-    }
-}
-
-void MainWindow::switchLanguage(QString const& lang)
-{
-    if (translator_.load(glob_values::TR_FILE_PREFIX + lang))
-    {
-        qApp->installTranslator(&translator_);
-    }
-    this->setWindowTitle(tr_values::WINDOW_TITLE());
-
-    ui_->new_button->setText(tr_values::NEW_BTN());
-    ui_->open_button->setText(tr_values::OPEN_BTN());
-    ui_->open_read_button->setText(tr_values::OPEN_READ_BTN());
-    ui_->save_button->setText(tr_values::SAVE_BTN());
-    ui_->print_button->setText(tr_values::PRINT_BTN());
-    ui_->settings_button->setText(tr_values::SETTINGS_BTN());
-    ui_->help_button->setText(tr_values::HELP_BTN());
-
-    ui_->file_menu->setTitle(tr_values::FILE_MENU());
-    ui_->edit_menu->setTitle(tr_values::EDIT_MENU());
-    ui_->open_action->setText(tr_values::OPEN_BTN());
-    ui_->open_rd_action->setText(tr_values::OPEN_READ_BTN());
-    ui_->save_action->setText(tr_values::SAVE_BTN());
-    ui_->print_action->setText(tr_values::PRINT_BTN());
-    ui_->help_action->setText(tr_values::HELP_BTN());
-    ui_->copy_action->setText(tr_values::COPY_ACTION());
-    ui_->cut_action->setText(tr_values::CUT_ACTION());
-    ui_->paste_action->setText(tr_values::PASTE_ACTION());
-
-    ui_->left_button->setText(tr_values::LEFT_BTN());
-    ui_->center_button->setText(tr_values::CENTER_BTN());
-    ui_->right_button->setText(tr_values::RIGHT_BTN());
-    ui_->font_button->setText(tr_values::FONT_BTN());
-    ui_->copy_format_button->setText(tr_values::COPY_FMT_BTN());
-    ui_->apply_format_button->setText(tr_values::APPLY_FMT_BTN());
-
-    ui_->task_5_3_menu->setTitle(tr_values::FINDER_MENU());
-    ui_->finder_action->setText(tr_values::FINDER_ACTION());
-
-    finder_dialog_->updateTranslatable();
-    settings_dialog_->updateTranslatable();
-
-    updateBasedOnReadOnlyState();
-}
-
-void MainWindow::switchTheme(QString const& theme)
-{
-    auto lst = ui_->centralwidget->findChildren<QWidget*>();
-    lst.push_back(ui_->centralwidget);
-
-    processStyleInList(lst, theme);
-
-    finder_dialog_->switchTheme(theme);
-    settings_dialog_->switchTheme(theme);
-}
-
-QSettings* MainWindow::getSettings()
-{
-    return settings_.get();
-}
-
-void MainWindow::closeTab(int index)
-{
-    if (checkIndex(index, docs_))
-    {
-        if (!docs_[index].is_read_only)
+        if (!docs[index].isReadOnly && !withoutSave && !docs[index].isSaved)
         {
-            auto const reply = QMessageBox::question(nullptr, tr_values::CLOSE_TAB_TITLE(),
-                tr_values::CLOSE_TAB_TEXT());
+            auto const reply = QMessageBox::question(nullptr,
+                                                     tr_values::CLOSE_TAB_TITLE(),
+                                                     tr_values::CLOSE_TAB_TEXT());
             if (reply == QMessageBox::Yes)
             {
                 onSaveClicked();
             }
         }
-        auto const tab = tabs_->widget(index);
-        tabs_->removeTab(index);
+        auto const tab = tabs->widget(index);
+        tabs->removeTab(index);
         delete tab;
 
-        docs_[index].file_path.clear();
-        docs_[index].is_read_only = false;
-        docs_.erase(std::next(docs_.begin(), index));
+        docs[index].filePath.clear();
+        docs[index].isReadOnly = false;
+        docs.erase(std::next(docs.begin(), index));
     }
 }
 
 void MainWindow::initShortcuts()
 {
-    auto open = settings_dialog_->getOpenEdit();
-    auto save = settings_dialog_->getSaveEdit();
-    auto _new = settings_dialog_->getNewEdit();
-    auto quit = settings_dialog_->getQuitEdit();
+    auto const openName = hotkeys_names::OPEN;
+    auto const saveName = hotkeys_names::SAVE;
+    auto const newName = hotkeys_names::_NEW;
+    auto const quitName = hotkeys_names::QUIT;
 
-    auto const open_hk = settings_->contains(open->objectName())
-            ? settings_->value(open->objectName(), "").toString()
+    auto const openHotKey = settings->contains(openName)
+            ? settings->value(openName, "").toString()
             : hotkeys_values::OPEN;
-    auto const save_hk = settings_->contains(save->objectName())
-            ? settings_->value(save->objectName(), "").toString()
+    auto const saveHotKey = settings->contains(saveName)
+            ? settings->value(saveName, "").toString()
             : hotkeys_values::SAVE;
-    auto const new_hk = settings_->contains(_new->objectName())
-            ? settings_->value(_new->objectName(), "").toString()
+    auto const newHotKey = settings->contains(newName)
+            ? settings->value(newName, "").toString()
             : hotkeys_values::_NEW;
-    auto const quit_hk = settings_->contains(quit->objectName())
-            ? settings_->value(quit->objectName(), "").toString()
+    auto const quitHotKey = settings->contains(quitName)
+            ? settings->value(quitName, "").toString()
             : hotkeys_values::QUIT;
-    hot_keys_[open->objectName()] = std::make_shared<QShortcut>(QKeySequence(open_hk), this);
-    hot_keys_[save->objectName()] = std::make_shared<QShortcut>(QKeySequence(save_hk), this);
-    hot_keys_[_new->objectName()] = std::make_shared<QShortcut>(QKeySequence(new_hk), this);
-    hot_keys_[quit->objectName()] = std::make_shared<QShortcut>(QKeySequence(quit_hk), this);
+    hotKeys[openName] = new QShortcut(QKeySequence(openHotKey), this);
+    hotKeys[saveName] = new QShortcut(QKeySequence(saveHotKey), this);
+    hotKeys[newName] = new QShortcut(QKeySequence(newHotKey), this);
+    hotKeys[quitName] = new QShortcut(QKeySequence(quitHotKey), this);
 
-    auto hot_key = hot_keys_[open->objectName()]->key();
-    open->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
-    hot_key = hot_keys_[save->objectName()]->key();
-    save->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
-    hot_key = hot_keys_[_new->objectName()]->key();
-    _new->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
-    hot_key = hot_keys_[quit->objectName()]->key();
-    quit->setPlaceholderText(hot_key.toString(QKeySequence::NativeText));
+    auto hotKey = hotKeys[openName]->key();
+    emit updateLineEditPlaceholderText(openName, hotKey.toString(QKeySequence::NativeText));
+    hotKey = hotKeys[saveName]->key();
+    emit updateLineEditPlaceholderText(saveName, hotKey.toString(QKeySequence::NativeText));
+    hotKey = hotKeys[newName]->key();
+    emit updateLineEditPlaceholderText(newName, hotKey.toString(QKeySequence::NativeText));
+    hotKey = hotKeys[quitName]->key();
+    emit updateLineEditPlaceholderText(quitName, hotKey.toString(QKeySequence::NativeText));
 
-    connect(hot_keys_[open->objectName()].get(), &QShortcut::activated, this, &MainWindow::onOpenClicked);
-    connect(hot_keys_[save->objectName()].get(), &QShortcut::activated, this, &MainWindow::onSaveClicked);
-    connect(hot_keys_[_new->objectName()].get(), &QShortcut::activated, this, &MainWindow::onNewClicked);
-    connect(hot_keys_[quit->objectName()].get(), &QShortcut::activated, this, &MainWindow::onQuitClicked);
+    connect(hotKeys[openName], &QShortcut::activated, this, &MainWindow::onOpenClicked);
+    connect(hotKeys[saveName], &QShortcut::activated, this, &MainWindow::onSaveClicked);
+    connect(hotKeys[newName], &QShortcut::activated, this, &MainWindow::onNewClicked);
+    connect(hotKeys[quitName], &QShortcut::activated, this, &MainWindow::onQuitClicked);
 }
 
 void MainWindow::initTabs()
 {
-    tabs_ = std::make_unique<QTabWidget>(ui_->centralwidget);
-    tabs_->setElideMode(Qt::ElideRight);
-    tabs_->setUsesScrollButtons(true);
-    tabs_->setTabsClosable(true);
-    tabs_->setMovable(true);
-    ui_->verticalLayout->addWidget(tabs_.get());
+    tabs = new QTabWidget(ui->centralwidget);
+    tabs->setElideMode(Qt::ElideRight);
+    tabs->setUsesScrollButtons(true);
+    tabs->setTabsClosable(true);
+    tabs->setMovable(true);
+    ui->verticalLayout->addWidget(tabs);
 
-    connect(tabs_.get(), &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
-    connect(tabs_.get(), &QTabWidget::currentChanged, this, &MainWindow::tabSelected);
+    connect(tabs, &QTabWidget::tabCloseRequested, this, [this](auto idx) { closeTab(idx); });
+    connect(tabs, &QTabWidget::currentChanged, this, &MainWindow::tabSelected);
     onNewClicked();
     connectActions();
-    tabs_->setFocus();
+    tabs->setFocus();
 }
 
 void MainWindow::connectButtons()
 {
-    connect(ui_->new_button, &QPushButton::clicked, this, &MainWindow::onNewClicked);
-    connect(ui_->open_button, &QPushButton::clicked, this, &MainWindow::onOpenClicked);
-    connect(ui_->open_read_button, &QPushButton::clicked, this, &MainWindow::onOpenReadClicked);
-    connect(ui_->save_button, &QPushButton::clicked, this, &MainWindow::onSaveClicked);
-    connect(ui_->help_button, &QPushButton::clicked, this, &MainWindow::onHelpClicked);
-    connect(ui_->settings_button, &QPushButton::clicked, this, &MainWindow::onSettingsClicked);
-    connect(ui_->print_button, &QPushButton::clicked, this, &MainWindow::onPrintClicked);
-    connect(ui_->left_button, &QPushButton::clicked, this, &MainWindow::onLeftClicked);
-    connect(ui_->center_button, &QPushButton::clicked, this, &MainWindow::onCenterClicked);
-    connect(ui_->right_button, &QPushButton::clicked, this, &MainWindow::onRightClicked);
-    connect(ui_->font_button, &QPushButton::clicked, this, &MainWindow::onFontClicked);
-    connect(ui_->copy_format_button, &QPushButton::clicked, this, &MainWindow::onCopyFormatClicked);
-    connect(ui_->apply_format_button, &QPushButton::clicked, this, &MainWindow::onApplyFormatClicked);
+    connect(ui->new_button, &QPushButton::clicked, this, &MainWindow::onNewClicked);
+    connect(ui->open_button, &QPushButton::clicked, this, &MainWindow::onOpenClicked);
+    connect(ui->open_read_button, &QPushButton::clicked, this, &MainWindow::onOpenReadClicked);
+    connect(ui->save_button, &QPushButton::clicked, this, &MainWindow::onSaveClicked);
+    connect(ui->save_as_button, &QPushButton::clicked, this, &MainWindow::onSaveAsClicked);
+    connect(ui->help_button, &QPushButton::clicked, this, &MainWindow::onHelpClicked);
+    connect(ui->settings_button, &QPushButton::clicked, this, &MainWindow::onSettingsClicked);
+    connect(ui->print_button, &QPushButton::clicked, this, &MainWindow::onPrintClicked);
+    connect(ui->left_button, &QPushButton::clicked, this, &MainWindow::onLeftClicked);
+    connect(ui->center_button, &QPushButton::clicked, this, &MainWindow::onCenterClicked);
+    connect(ui->right_button, &QPushButton::clicked, this, &MainWindow::onRightClicked);
+    connect(ui->font_button, &QPushButton::clicked, this, &MainWindow::onFontClicked);
+    connect(ui->copy_format_button, &QPushButton::clicked, this, &MainWindow::onCopyFormatClicked);
+    connect(ui->apply_format_button, &QPushButton::clicked, this, &MainWindow::onApplyFormatClicked);
+    connect(ui->date_button, &QPushButton::clicked, this, &MainWindow::onDateClicked);
+    connect(ui->time_button, &QPushButton::clicked, this, &MainWindow::onTimeClicked);
 }
 
 void MainWindow::connectActions()
 {
-    auto const tab = dynamic_cast<CustomPlainTextEdit*>(tabs_->currentWidget());
-    connect(ui_->copy_action, &QAction::triggered, tab, &CustomPlainTextEdit::copyText);
-    connect(ui_->cut_action, &QAction::triggered, tab, &CustomPlainTextEdit::cutText);
-    connect(ui_->paste_action, &QAction::triggered, tab, &CustomPlainTextEdit::pasteText);
-    connect(ui_->open_action, &QAction::triggered, this, &MainWindow::onOpenClicked);
-    connect(ui_->open_rd_action, &QAction::triggered, this, &MainWindow::onOpenReadClicked);
-    connect(ui_->save_action, &QAction::triggered, this, &MainWindow::onSaveClicked);
-    connect(ui_->help_action, &QAction::triggered, this, &MainWindow::onHelpClicked);
-    connect(ui_->print_action, &QAction::triggered, this, &MainWindow::onPrintClicked);
-    connect(ui_->finder_action, &QAction::triggered, this, &MainWindow::onFinderMenuClicked);
+    auto const tab = dynamic_cast<CustomTextEdit*>(tabs->currentWidget());
+    connect(ui->copy_action, &QAction::triggered, tab, &CustomTextEdit::copyText);
+    connect(ui->cut_action, &QAction::triggered, tab, &CustomTextEdit::cutText);
+    connect(ui->paste_action, &QAction::triggered, tab, &CustomTextEdit::pasteText);
+    connect(tab, &CustomTextEdit::textChanged, this, &MainWindow::onTextChanged);
+    connect(ui->open_action, &QAction::triggered, this, &MainWindow::onOpenClicked);
+    connect(ui->open_rd_action, &QAction::triggered, this, &MainWindow::onOpenReadClicked);
+    connect(ui->save_action, &QAction::triggered, this, &MainWindow::onSaveClicked);
+    connect(ui->help_action, &QAction::triggered, this, &MainWindow::onHelpClicked);
+    connect(ui->print_action, &QAction::triggered, this, &MainWindow::onPrintClicked);
 }
 
-void MainWindow::initEventFilter()
+void MainWindow::prepareSettingsDialog()
 {
-    ev_filter_ = std::make_shared<KeyEventFilter>(hot_keys_, this);
-    settings_dialog_->getOpenEdit()->installEventFilter(ev_filter_.get());
-    settings_dialog_->getSaveEdit()->installEventFilter(ev_filter_.get());
-    settings_dialog_->getNewEdit()->installEventFilter(ev_filter_.get());
-    settings_dialog_->getQuitEdit()->installEventFilter(ev_filter_.get());
+    dir = settings->contains(conf_param_name::DIR)
+            ? settings->value(conf_param_name::DIR, "").toString()
+            : QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    lang = settings->contains(conf_param_name::LANG)
+            ? settings->value(conf_param_name::LANG, "").toString()
+            : lang_values::RU;
+    theme = settings->contains(conf_param_name::THEME)
+            ? settings->value(conf_param_name::THEME, "").toString()
+            : theme_values::LIGHT;
+    switchLanguage(lang);
+    emit updateLanguageSelector(lang);
+    switchTheme(theme);
+    emit updateThemeSelector(theme);
+
+    connect(settingsDialog, &SettingsDialog::englishSelected, this, &MainWindow::onEnglishSelected);
+    connect(settingsDialog, &SettingsDialog::darkSelected, this, &MainWindow::onDarkSelected);
+    connect(settingsDialog, &SettingsDialog::changeHotKey, this, &MainWindow::onChangeHotKey);
 }
