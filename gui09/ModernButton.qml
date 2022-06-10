@@ -3,9 +3,9 @@ import QtQuick.Controls
 
 Button
 {
-    property string frontColor: ''
-    property string frontColorPressed: ''
-    property string backColor: ''
+    property string frontColor: 'plum'
+    property string frontColorPressed: 'deeppink'
+    property string backColor: 'lightcyan'
 
     id: control
     text: qsTr('ModernButton')
