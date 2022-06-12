@@ -14,7 +14,13 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    QApplication::setApplicationName("Easy text edit");
+    QApplication::setApplicationVersion("1.0");
+
     QCommandLineParser parser;
+    parser.setApplicationDescription("Easy text edit with test function");
+    parser.addHelpOption();
+    parser.addVersionOption();
     QCommandLineOption testOption({"t", "makeTest"},
                                   QCoreApplication::translate("main", "Make a tests"));
     QCommandLineOption fileOption({"f", "fileName"},
