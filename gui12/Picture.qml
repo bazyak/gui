@@ -15,8 +15,15 @@ Rectangle
 
     Image
     {
+        id: image
         anchors.fill: parent
         fillMode: Image.PreserveAspectFit
         source: url
+    }
+
+    BusyIndicator
+    {
+        anchors.centerIn: parent
+        running: image.status === Image.Loading
     }
 }
