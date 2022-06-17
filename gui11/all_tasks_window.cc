@@ -1,5 +1,5 @@
 #include "all_tasks_window.h"
-#include "ui_tasks_window.h"
+#include "ui_all_tasks_window.h"
 
 #include <QPushButton>
 

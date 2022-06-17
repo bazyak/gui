@@ -55,7 +55,11 @@ Window
         {
             id: error
             color: 'white'
+            width: 300
             anchors.centerIn: parent
+            horizontalAlignment: Qt.AlignCenter
+            elide: Text.ElideRight
+            wrapMode: Text.Wrap
         }
     }
 
