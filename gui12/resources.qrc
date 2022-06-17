@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/gui12">
+        <file>Picture.qml</file>
+        <file>ModernButton.qml</file>
+    </qresource>
+</RCC>
