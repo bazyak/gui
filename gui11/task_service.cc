@@ -41,7 +41,8 @@ void TaskService::loadBase()
         PRIMARY KEY(id AUTOINCREMENT))"
     );
     model->setTable("Tasks");
-    emit initEnd(model->select(), model->rowCount());
+    auto result = model->select();
+    emit initEnd(result, model->rowCount());
 }
 
 void TaskService::preSaveTask(QString const& title, QString const& deadline, QString const& progress)
